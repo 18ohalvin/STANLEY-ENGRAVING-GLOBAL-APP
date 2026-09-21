@@ -6,6 +6,7 @@ import { getEngravingProfile } from '@/data/catalog'
 import stanleyLogo from '@/assets/images/stanley-logo.png'
 import quencherGreenBlankImg from '@/assets/products/quencher-green-blank.png'
 import blankIceflowImg from '@/assets/images/artist-drop-iceflow.png'
+import LaserPreview from '@/components/customizer/LaserPreview.vue'
 
 const props = defineProps<{
   product: Product
@@ -857,18 +858,20 @@ watch(
                 class="absolute transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-10 flex items-center justify-center pointer-events-none"
                 :style="graphicContainerStyle"
               >
-                <div
+                <LaserPreview
                   v-if="activeArtwork?.img"
-                  class="laser-engraved-mask transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                  :style="{
-                    ...dynamicGraphicStyle,
-                    maskImage: `url('${activeArtwork.img}')`,
-                    WebkitMaskImage: `url('${activeArtwork.img}')`,
-                  }"
-                ></div>
-                <span v-else class="text-3xl sm:text-4xl laser-engraved-text">
-                  {{ activeArtwork?.symbol }}
-                </span>
+                  type="image"
+                  :image-src="activeArtwork.img"
+                  :image-style="dynamicGraphicStyle"
+                  :is-light-tumbler="isProductColorLight"
+                />
+                <LaserPreview
+                  v-else-if="activeArtwork?.symbol"
+                  type="text"
+                  :text="activeArtwork.symbol"
+                  font-class="text-4xl"
+                  :is-light-tumbler="isProductColorLight"
+                />
               </div>
 
               <!-- Uploaded Artwork Layer (if present) -->
@@ -919,46 +922,30 @@ watch(
                     : (selectedPlacement === 'top' ? 'justify-start' : selectedPlacement === 'bottom' ? 'justify-end' : 'justify-center')
                 ]"
               >
-                <div
+                <LaserPreview
                   v-if="engravingText"
-                  class="text-neutral-800 font-bold opacity-85 mix-blend-multiply select-none whitespace-pre-wrap transition-all duration-200"
-                  :class="[
-                    getFontClass(selectedFont),
-                    isFontUppercase(selectedFont) ? 'uppercase' : '',
-                    selectedGraphicSize === 'L' && selectedArtwork
-                      ? (selectedFontSize === 'S'
-                          ? 'text-[19px] sm:text-[22px] leading-[1.15]'
-                          : selectedFontSize === 'M'
-                          ? 'text-[24px] sm:text-[26px] leading-[1.12]'
-                          : selectedFontSize === 'L'
-                          ? 'text-[29px] sm:text-[31px] leading-[1.1]'
-                          : 'text-[36px] sm:text-[41px] leading-[1.05]')
-                      : (selectedFontSize === 'S'
-                          ? 'text-[22px] sm:text-[24px] leading-[1.15]'
-                          : selectedFontSize === 'M'
-                          ? 'text-[29px] sm:text-[34px] leading-[1.1]'
-                          : selectedFontSize === 'L'
-                          ? 'text-[36px] sm:text-[43px] leading-[1.05]'
-                          : 'text-[46px] sm:text-[55px] leading-[1.0]'),
-                    textOrientation === 'vertical'
-                      ? '-rotate-90 transform-gpu whitespace-nowrap flex flex-col items-center justify-center text-center tracking-wider'
-                      : 'text-center w-full max-w-full break-words tracking-wider'
-                  ]"
-                >
-                  <template v-if="textOrientation === 'vertical'">
-                    <div
-                      v-for="(line, idx) in formattedVerticalLines"
-                      :key="idx"
-                      class="whitespace-nowrap text-center leading-tight"
-                      :class="idx > 0 ? 'mt-1 sm:mt-1.5' : ''"
-                    >
-                      {{ line }}
-                    </div>
-                  </template>
-                  <template v-else>
-                    {{ engravingText }}
-                  </template>
-                </div>
+                  type="text"
+                  :text="engravingText"
+                  :font-class="[getFontClass(selectedFont), isFontUppercase(selectedFont) ? 'uppercase' : ''].join(' ')"
+                  :font-size-class="selectedGraphicSize === 'L' && selectedArtwork
+                    ? (selectedFontSize === 'S'
+                        ? 'text-[19px] sm:text-[22px]'
+                        : selectedFontSize === 'M'
+                        ? 'text-[24px] sm:text-[26px]'
+                        : selectedFontSize === 'L'
+                        ? 'text-[29px] sm:text-[31px]'
+                        : 'text-[36px] sm:text-[41px]')
+                    : (selectedFontSize === 'S'
+                        ? 'text-[22px] sm:text-[24px]'
+                        : selectedFontSize === 'M'
+                        ? 'text-[29px] sm:text-[34px]'
+                        : selectedFontSize === 'L'
+                        ? 'text-[36px] sm:text-[43px]'
+                        : 'text-[46px] sm:text-[55px]')"
+                  :orientation="textOrientation"
+                  :vertical-lines="formattedVerticalLines"
+                  :is-light-tumbler="isProductColorLight"
+                />
                 <!-- Placeholder during active text editing if text is empty -->
                 <div
                   v-else-if="selectedSubCategory === 'text'"

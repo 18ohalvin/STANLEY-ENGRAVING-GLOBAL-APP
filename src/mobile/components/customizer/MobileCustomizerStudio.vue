@@ -45,6 +45,7 @@ import {
 // Blank tumbler stage images
 import blankIceflowImg from '@/assets/images/artist-drop-iceflow.png'
 import quencherGreenBlankImg from '@/assets/products/quencher-green-blank.png'
+import LaserPreview from '@/components/customizer/LaserPreview.vue'
 
 const props = defineProps<{
   product: Product
@@ -994,14 +995,12 @@ const handleNextStep = () => {
                           class="absolute transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-10 flex items-center justify-center pointer-events-none"
                           :style="dynamicAppliedGraphicContainerStyle"
                         >
-                          <div
-                            class="laser-engraved-mask transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                            :style="{
-                              ...dynamicAppliedGraphicStyle,
-                              maskImage: `url('${getArtworkImage(appliedState.artwork)}')`,
-                              WebkitMaskImage: `url('${getArtworkImage(appliedState.artwork)}')`,
-                            }"
-                          ></div>
+                          <LaserPreview
+                            type="image"
+                            :image-src="getArtworkImage(appliedState.artwork)"
+                            :image-style="dynamicAppliedGraphicStyle"
+                            :is-light-tumbler="isProductColorLight"
+                          />
                         </div>
 
                         <!-- Uploaded Graphic Layer (if present) -->
@@ -1026,45 +1025,29 @@ const handleNextStep = () => {
                               : (appliedState.placement === 'top' ? 'justify-start' : appliedState.placement === 'bottom' ? 'justify-end' : 'justify-center')
                           ]"
                         >
-                          <div
-                            class="text-white font-bold opacity-95 select-none whitespace-pre-wrap transition-all drop-shadow-xs"
-                            :class="[
-                              appliedState.font || fontOptions[0].class,
-                              isFontUppercase(appliedState.font) ? 'uppercase' : '',
-                              (appliedState.graphicSize === 'L' && appliedState.artwork)
-                                ? (appliedState.fontSize === 'S'
-                                    ? 'text-[19px] leading-[1.2]'
-                                    : appliedState.fontSize === 'M'
-                                    ? 'text-[24px] leading-[1.15]'
-                                    : appliedState.fontSize === 'L'
-                                    ? 'text-[29px] leading-[1.1]'
-                                    : 'text-[36px] leading-[1.05]')
-                                : (appliedState.fontSize === 'S'
-                                    ? 'text-[24px] leading-[1.2]'
-                                    : appliedState.fontSize === 'M'
-                                    ? 'text-[36px] leading-[1.1]'
-                                    : appliedState.fontSize === 'L'
-                                    ? 'text-[48px] leading-[1.05]'
-                                    : 'text-[60px] leading-[1.0]'),
-                              appliedState.orientation === 'vertical'
-                                ? '-rotate-90 transform-gpu whitespace-nowrap flex flex-col items-center justify-center text-center tracking-wider'
-                                : 'text-center w-full max-w-full break-words tracking-wider'
-                            ]"
-                          >
-                            <template v-if="appliedState.orientation === 'vertical'">
-                              <div
-                                v-for="(line, idx) in formattedAppliedVerticalLines"
-                                :key="idx"
-                                class="whitespace-nowrap text-center leading-tight"
-                                :class="idx > 0 ? 'mt-1' : ''"
-                              >
-                                {{ line }}
-                              </div>
-                            </template>
-                            <template v-else>
-                              {{ appliedState.text }}
-                            </template>
-                          </div>
+                          <LaserPreview
+                            type="text"
+                            :text="appliedState.text"
+                            :font-class="[appliedState.font || fontOptions[0].class, isFontUppercase(appliedState.font) ? 'uppercase' : ''].join(' ')"
+                            :font-size-class="(appliedState.graphicSize === 'L' && appliedState.artwork)
+                              ? (appliedState.fontSize === 'S'
+                                  ? 'text-[19px]'
+                                  : appliedState.fontSize === 'M'
+                                  ? 'text-[24px]'
+                                  : appliedState.fontSize === 'L'
+                                  ? 'text-[29px]'
+                                  : 'text-[36px]')
+                              : (appliedState.fontSize === 'S'
+                                  ? 'text-[24px]'
+                                  : appliedState.fontSize === 'M'
+                                  ? 'text-[36px]'
+                                  : appliedState.fontSize === 'L'
+                                  ? 'text-[48px]'
+                                  : 'text-[60px]')"
+                            :orientation="appliedState.orientation"
+                            :vertical-lines="formattedAppliedVerticalLines"
+                            :is-light-tumbler="isProductColorLight"
+                          />
                         </div>
                       </div>
                     </div>
@@ -1666,69 +1649,40 @@ const handleNextStep = () => {
                               : (draftPlacement === 'top' ? 'justify-start' : draftPlacement === 'bottom' ? 'justify-end' : 'justify-center')
                           ]"
                         >
-                          <div
-                            class="select-none whitespace-pre-wrap transition-all"
+                          <LaserPreview
+                            v-if="draftText"
+                            type="text"
+                            :text="draftText"
+                            :font-class="[draftFont, isFontUppercase(draftFont) ? 'uppercase' : ''].join(' ')"
+                            :font-size-class="((appliedState.graphicSize || draftGraphicSize) === 'L' && (selectedArtwork || appliedState.artwork))
+                              ? (draftFontSize === 'S'
+                                  ? 'text-[19px]'
+                                  : draftFontSize === 'M'
+                                  ? 'text-[24px]'
+                                  : draftFontSize === 'L'
+                                  ? 'text-[29px]'
+                                  : 'text-[36px]')
+                              : (draftFontSize === 'S'
+                                  ? 'text-[24px]'
+                                  : draftFontSize === 'M'
+                                  ? 'text-[36px]'
+                                  : draftFontSize === 'L'
+                                  ? 'text-[48px]'
+                                  : 'text-[60px]')"
+                            :orientation="draftOrientation"
+                            :vertical-lines="formattedDraftVerticalLines"
+                            :is-light-tumbler="isProductColorLight"
+                          />
+                          <span
+                            v-else
+                            class="font-['Stanley_Favorit',sans-serif] font-medium text-[13px] sm:text-[14px]"
                             :class="[
-                              isProductColorLight ? 'text-neutral-800' : 'text-white drop-shadow-xs',
-                              draftText
-                                ? [
-                                    draftFont,
-                                    'font-bold opacity-95',
-                                    isFontUppercase(draftFont) ? 'uppercase' : '',
-                                    ((appliedState.graphicSize || draftGraphicSize) === 'L' && (selectedArtwork || appliedState.artwork))
-                                      ? (draftFontSize === 'S'
-                                          ? 'text-[19px] leading-[1.2]'
-                                          : draftFontSize === 'M'
-                                          ? 'text-[24px] leading-[1.15]'
-                                          : draftFontSize === 'L'
-                                          ? 'text-[29px] leading-[1.1]'
-                                          : 'text-[36px] leading-[1.05]')
-                                      : (draftFontSize === 'S'
-                                          ? 'text-[24px] leading-[1.2]'
-                                          : draftFontSize === 'M'
-                                          ? 'text-[36px] leading-[1.1]'
-                                          : draftFontSize === 'L'
-                                          ? 'text-[48px] leading-[1.05]'
-                                          : 'text-[60px] leading-[1.0]'),
-                                  ]
-                                : 'font-[\'Stanley_Favorit\',sans-serif] font-medium text-[13px] sm:text-[14px]',
-                              draftOrientation === 'vertical'
-                                ? '-rotate-90 transform-gpu whitespace-nowrap flex flex-col items-center justify-center text-center tracking-wider'
-                                : 'text-center w-full max-w-full break-words tracking-wider'
+                              isProductColorLight ? 'text-neutral-700/80' : 'text-white/80',
+                              draftOrientation === 'vertical' ? '-rotate-90 transform-gpu whitespace-nowrap text-center tracking-wider' : ''
                             ]"
                           >
-                            <template v-if="draftText">
-                              <template v-if="draftOrientation === 'vertical'">
-                                <div
-                                  v-for="(line, idx) in formattedDraftVerticalLines"
-                                  :key="idx"
-                                  class="whitespace-nowrap text-center leading-tight"
-                                  :class="idx > 0 ? 'mt-1' : ''"
-                                >
-                                  {{ line }}
-                                </div>
-                              </template>
-                              <template v-else>
-                                <span>{{ draftText }}</span>
-                              </template>
-                              <!-- Blinking cursor during focus -->
-                              <span
-                                v-if="isTextFocused"
-                                class="inline-block bg-white animate-pulse"
-                                :class="draftOrientation === 'vertical' ? 'w-[2px] h-[1em] ml-0.5 align-middle' : 'w-[2px] h-[1em] ml-0.5 align-middle'"
-                              ></span>
-                            </template>
-                            <span
-                              v-else
-                              class="font-['Stanley_Favorit',sans-serif] font-medium text-[13px] sm:text-[14px]"
-                              :class="[
-                                isProductColorLight ? 'text-neutral-700/80' : 'text-white/80',
-                                draftOrientation === 'vertical' ? '-rotate-90 transform-gpu whitespace-nowrap text-center tracking-wider' : ''
-                              ]"
-                            >
-                              Your text will appear here
-                            </span>
-                          </div>
+                            Your text will appear here
+                          </span>
                         </div>
 
                         <!-- Seamless Transparent Textarea covering bounding box for keyboard / touch input -->
@@ -2044,14 +1998,12 @@ const handleNextStep = () => {
                         class="absolute transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-10 flex items-center justify-center pointer-events-none"
                         :style="dynamicAppliedGraphicContainerStyle"
                       >
-                        <div
-                          class="laser-engraved-mask transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                          :style="{
-                            ...dynamicAppliedGraphicStyle,
-                            maskImage: `url('${getArtworkImage(selectedArtwork)}')`,
-                            WebkitMaskImage: `url('${getArtworkImage(selectedArtwork)}')`,
-                          }"
-                        ></div>
+                        <LaserPreview
+                          type="image"
+                          :image-src="getArtworkImage(selectedArtwork)"
+                          :image-style="dynamicAppliedGraphicStyle"
+                          :is-light-tumbler="isProductColorLight"
+                        />
                       </div>
 
                       <!-- Rendered Applied Text if exists (Positioned in allocated space without shifting graphic) -->
@@ -2065,45 +2017,29 @@ const handleNextStep = () => {
                             : (appliedState.placement === 'top' ? 'justify-start' : appliedState.placement === 'bottom' ? 'justify-end' : 'justify-center')
                         ]"
                       >
-                        <div
-                          class="text-white font-bold opacity-95 select-none whitespace-pre-wrap transition-all drop-shadow-xs"
-                          :class="[
-                            appliedState.font || fontOptions[0].class,
-                            isFontUppercase(appliedState.font) ? 'uppercase' : '',
-                            (appliedState.graphicSize === 'L' && (selectedArtwork || appliedState.artwork))
-                              ? (appliedState.fontSize === 'S'
-                                  ? 'text-[19px] leading-[1.2]'
-                                  : appliedState.fontSize === 'M'
-                                  ? 'text-[24px] leading-[1.15]'
-                                  : appliedState.fontSize === 'L'
-                                  ? 'text-[29px] leading-[1.1]'
-                                  : 'text-[36px] leading-[1.05]')
-                              : (appliedState.fontSize === 'S'
-                                  ? 'text-[24px] leading-[1.2]'
-                                  : appliedState.fontSize === 'M'
-                                  ? 'text-[36px] leading-[1.1]'
-                                  : appliedState.fontSize === 'L'
-                                  ? 'text-[48px] leading-[1.05]'
-                                  : 'text-[60px] leading-[1.0]'),
-                            appliedState.orientation === 'vertical'
-                              ? '-rotate-90 transform-gpu whitespace-nowrap flex flex-col items-center justify-center text-center tracking-wider'
-                              : 'text-center w-full max-w-full break-words tracking-wider'
-                          ]"
-                        >
-                          <template v-if="appliedState.orientation === 'vertical'">
-                            <div
-                              v-for="(line, idx) in formattedAppliedVerticalLines"
-                              :key="idx"
-                              class="whitespace-nowrap text-center leading-tight"
-                              :class="idx > 0 ? 'mt-1' : ''"
-                            >
-                              {{ line }}
-                            </div>
-                          </template>
-                          <template v-else>
-                            <span>{{ appliedState.text }}</span>
-                          </template>
-                        </div>
+                        <LaserPreview
+                          type="text"
+                          :text="appliedState.text"
+                          :font-class="[appliedState.font || fontOptions[0].class, isFontUppercase(appliedState.font) ? 'uppercase' : ''].join(' ')"
+                          :font-size-class="(appliedState.graphicSize === 'L' && (selectedArtwork || appliedState.artwork))
+                            ? (appliedState.fontSize === 'S'
+                                ? 'text-[19px]'
+                                : appliedState.fontSize === 'M'
+                                ? 'text-[24px]'
+                                : appliedState.fontSize === 'L'
+                                ? 'text-[29px]'
+                                : 'text-[36px]')
+                            : (appliedState.fontSize === 'S'
+                                ? 'text-[24px]'
+                                : appliedState.fontSize === 'M'
+                                ? 'text-[36px]'
+                                : appliedState.fontSize === 'L'
+                                ? 'text-[48px]'
+                                : 'text-[60px]')"
+                          :orientation="appliedState.orientation"
+                          :vertical-lines="formattedAppliedVerticalLines"
+                          :is-light-tumbler="isProductColorLight"
+                        />
                       </div>
                     </div>
                   </div>

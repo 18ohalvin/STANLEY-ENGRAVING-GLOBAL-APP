@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 
 interface Props {
   type?: 'text' | 'image' | 'custom'
   text?: string
   fontClass?: string
   fontSizeClass?: string
+  fontSize?: number
   orientation?: 'horizontal' | 'vertical'
   verticalLines?: string[]
   imageSrc?: string
@@ -13,6 +14,8 @@ interface Props {
   isLightTumbler?: boolean
   depthLevel?: 'subtle' | 'standard' | 'deep'
   containerClass?: string
+  viewBoxWidth?: number
+  viewBoxHeight?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -20,12 +23,15 @@ const props = withDefaults(defineProps<Props>(), {
   text: '',
   fontClass: '',
   fontSizeClass: 'text-[28px]',
+  fontSize: 0,
   orientation: 'horizontal',
   verticalLines: () => [],
   imageSrc: '',
   isLightTumbler: false,
   depthLevel: 'standard',
-  containerClass: ''
+  containerClass: '',
+  viewBoxWidth: 0,
+  viewBoxHeight: 0
 })
 
 // Unique instance ID for SVG definitions
@@ -67,28 +73,90 @@ const metallicGradientCss = computed(() => {
   return `linear-gradient(90deg, ${stopsStr})`
 })
 
-// Extract numeric font size in pixels from fontSizeClass (e.g. 'text-[34px]' -> 34)
+// Container dimensions detection for exact 1:1 SVG coordinate rendering
+const containerRef = ref<HTMLElement | null>(null)
+const detectedWidth = ref(191)
+const detectedHeight = ref(280)
+
+const updateDimensions = () => {
+  if (containerRef.value) {
+    const w = containerRef.value.clientWidth
+    const h = containerRef.value.clientHeight
+    if (w > 0) detectedWidth.value = Math.round(w)
+    if (h > 0) detectedHeight.value = Math.round(h)
+  }
+}
+
+onMounted(() => {
+  updateDimensions()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', updateDimensions)
+  }
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', updateDimensions)
+  }
+})
+
+watch(() => [props.viewBoxWidth, props.viewBoxHeight, props.text, props.imageSrc, props.orientation], () => {
+  nextTick(updateDimensions)
+})
+
+// ViewBox coordinate system: matches container width x height
+const VB_WIDTH = computed(() => props.viewBoxWidth || detectedWidth.value || 191)
+const VB_HEIGHT = computed(() => props.viewBoxHeight || detectedHeight.value || 280)
+const CX = computed(() => VB_WIDTH.value / 2)
+const CY = computed(() => VB_HEIGHT.value / 2)
+
+// Extract numeric font size in pixels from fontSize prop or fontSizeClass
 const numericFontSize = computed(() => {
-  const match = props.fontSizeClass.match(/text-\[(\d+)px\]/)
+  if (props.fontSize && props.fontSize > 0) return props.fontSize
+  const str = props.fontSizeClass || ''
+  const isSmOrLarger = typeof window !== 'undefined' && window.innerWidth >= 640
+  if (isSmOrLarger) {
+    const smMatch = str.match(/sm:text-\[(\d+)px\]/)
+    if (smMatch) return parseInt(smMatch[1], 10)
+  }
+  const match = str.match(/text-\[(\d+)px\]/)
   if (match) return parseInt(match[1], 10)
-  if (props.fontSizeClass.includes('text-sm')) return 18
-  if (props.fontSizeClass.includes('text-base')) return 22
-  if (props.fontSizeClass.includes('text-lg')) return 26
-  if (props.fontSizeClass.includes('text-xl')) return 32
-  if (props.fontSizeClass.includes('text-2xl')) return 38
+  if (str.includes('text-xs')) return 12
+  if (str.includes('text-sm')) return 14
+  if (str.includes('text-base')) return 16
+  if (str.includes('text-lg')) return 20
+  if (str.includes('text-xl')) return 24
+  if (str.includes('text-2xl')) return 28
+  if (str.includes('text-3xl')) return 32
+  if (str.includes('text-4xl')) return 38
+  if (str.includes('text-5xl')) return 48
   return 32
 })
 
 // Determine font-family and uppercase styling from fontClass
 const parsedFontFamily = computed(() => {
-  if (props.fontClass.includes('Stanley_Favorit')) return "'Stanley_Favorit', sans-serif"
-  if (props.fontClass.includes('serif')) return 'Georgia, Cambria, serif'
-  if (props.fontClass.includes('mono')) return 'Menlo, Monaco, Consolas, monospace'
+  const fc = props.fontClass || ''
+  if (fc.includes('Dancing_Script') || fc.includes('Dancing Script')) return "'Dancing Script', 'Dancing_Script', cursive"
+  if (fc.includes('Space_Mono') || fc.includes('Space Mono')) return "'Space Mono', 'Space_Mono', monospace"
+  if (fc.includes('Gasoek_One') || fc.includes('Gasoek One')) return "'Gasoek One', 'Gasoek_One', sans-serif"
+  if (fc.includes('Caveat')) return "'Caveat', cursive"
+  if (fc.includes('Cinzel')) return "'Cinzel', serif"
+  if (fc.includes('Playfair_Display') || fc.includes('Playfair Display')) return "'Playfair Display', 'Playfair_Display', serif"
+  if (fc.includes('Bebas_Neue') || fc.includes('Bebas Neue')) return "'Bebas Neue', 'Bebas_Neue', sans-serif"
+  if (fc.includes('serif')) return 'Georgia, Cambria, serif'
+  if (fc.includes('mono')) return 'Menlo, Monaco, Consolas, monospace'
   return "'Stanley_Favorit', sans-serif"
 })
 
 const isUppercase = computed(() => {
-  return props.fontClass.includes('uppercase')
+  const fc = props.fontClass || ''
+  return fc.includes('uppercase') || fc.includes('Cinzel') || fc.includes('Bebas')
+})
+
+const parsedLetterSpacing = computed(() => {
+  const fc = props.fontClass || ''
+  if (fc.includes('Bebas_Neue') || fc.includes('Bebas Neue') || fc.includes('tracking-wider')) return '0.08em'
+  return props.orientation === 'vertical' ? '0.08em' : '0.05em'
 })
 
 const displayText = computed(() => {
@@ -101,6 +169,11 @@ const processedVerticalLines = computed(() => {
     return props.verticalLines.map(l => isUppercase.value ? l.toUpperCase() : l)
   }
   return [displayText.value]
+})
+
+const horizontalLines = computed(() => {
+  if (!displayText.value) return []
+  return displayText.value.split('\n')
 })
 
 // Depth relief configuration for true physical DEBOSSED effect:
@@ -160,21 +233,18 @@ const imageMaskStyle = computed(() => {
     ...(props.imageStyle || {})
   }
 })
-
-// ViewBox coordinate system: 191 width x 280 height (matches standard Stanley engraving zone)
-const VB_WIDTH = 191
-const VB_HEIGHT = 280
-const CX = VB_WIDTH / 2
-const CY = VB_HEIGHT / 2
 </script>
 
 <template>
-  <div class="relative w-full h-full flex items-center justify-center select-none antialiased" :class="containerClass">
-    
+  <div
+    ref="containerRef"
+    class="relative flex items-center justify-center select-none antialiased"
+    :class="[type === 'image' ? 'pointer-events-none' : 'w-full h-full pointer-events-none', containerClass]"
+  >
     <!-- SVG DEBOSS FILTER DEFINITIONS (8K Geometric Precision) -->
     <svg class="absolute w-0 h-0 pointer-events-none overflow-hidden" aria-hidden="true" shape-rendering="geometricPrecision">
       <defs>
-        <!-- GLOBAL CYLINDRICAL REFLECTION GRADIENT -->
+        <!-- GLOBAL CYLINDRICAL REFLECTION GRADIENT (Pinned to Tumbler Cylinder Width) -->
         <linearGradient :id="globalRefId" gradientUnits="userSpaceOnUse" x1="0" y1="0" :x2="VB_WIDTH" y2="0">
           <stop
             v-for="(stop, idx) in reflectionStops"
@@ -252,7 +322,7 @@ const CY = VB_HEIGHT / 2
           :font-family="parsedFontFamily"
           :font-size="numericFontSize"
           font-weight="bold"
-          letter-spacing="0.08em"
+          :letter-spacing="parsedLetterSpacing"
           shape-rendering="geometricPrecision"
           text-rendering="geometricPrecision"
           :transform="`rotate(-90 ${CX + (idx - (processedVerticalLines.length - 1) / 2) * (numericFontSize * 1.15)} ${CY})`"
@@ -272,11 +342,23 @@ const CY = VB_HEIGHT / 2
           :font-family="parsedFontFamily"
           :font-size="numericFontSize"
           font-weight="bold"
-          letter-spacing="0.05em"
+          :letter-spacing="parsedLetterSpacing"
           shape-rendering="geometricPrecision"
           text-rendering="geometricPrecision"
         >
-          {{ displayText }}
+          <template v-if="horizontalLines.length > 1">
+            <tspan
+              v-for="(line, idx) in horizontalLines"
+              :key="idx"
+              :x="CX"
+              :dy="idx === 0 ? `-${(horizontalLines.length - 1) * 0.55}em` : '1.15em'"
+            >
+              {{ line }}
+            </tspan>
+          </template>
+          <template v-else>
+            {{ displayText }}
+          </template>
         </text>
       </g>
     </svg>
