@@ -77,30 +77,49 @@ const metallicGradientCss = computed(() => {
   return `linear-gradient(90deg, ${stanleyStops})`
 })
 
-// Depth relief for laser vaporized powder-coat trench
+// Depth relief configuration for true physical DEBOSSED effect:
+// In debossing, the shape is sunken into the powder coat.
+// Light coming from top/ambient casts a dark inner shadow at the TOP wall of the cut,
+// and a bright specular rim catch at the BOTTOM lip of the cut.
 const depthConfig = computed(() => {
   switch (props.depthLevel) {
     case 'subtle':
       return {
-        filter: 'drop-shadow(0px 0.7px 0.5px rgba(0,0,0,0.65)) drop-shadow(0px -0.4px 0.3px rgba(255,255,255,0.45))',
-        rimColor: 'rgba(0,0,0,0.5)',
-        rimOffset: 'translate(0.4px, 0.6px)'
+        shadowDy: 1.0,
+        shadowBlur: 0.6,
+        shadowOpacity: 0.65,
+        highlightDy: -0.7,
+        highlightBlur: 0.4,
+        highlightOpacity: 0.45,
+        dropFilter: 'drop-shadow(0px -0.5px 0.4px rgba(0,0,0,0.6)) drop-shadow(0px 0.6px 0.4px rgba(255,255,255,0.35))'
       }
     case 'deep':
       return {
-        filter: 'drop-shadow(0px 1.5px 1px rgba(0,0,0,0.85)) drop-shadow(0px -0.8px 0.6px rgba(255,255,255,0.7))',
-        rimColor: 'rgba(0,0,0,0.8)',
-        rimOffset: 'translate(0.8px, 1.2px)'
+        shadowDy: 2.2,
+        shadowBlur: 1.0,
+        shadowOpacity: 0.95,
+        highlightDy: -1.2,
+        highlightBlur: 0.6,
+        highlightOpacity: 0.8,
+        dropFilter: 'drop-shadow(0px -1.0px 0.7px rgba(0,0,0,0.85)) drop-shadow(0px 1.2px 0.6px rgba(255,255,255,0.55))'
       }
     case 'standard':
     default:
       return {
-        filter: 'drop-shadow(0px 1px 0.8px rgba(0,0,0,0.75)) drop-shadow(0px -0.5px 0.4px rgba(255,255,255,0.55))',
-        rimColor: 'rgba(0,0,0,0.65)',
-        rimOffset: 'translate(0.6px, 0.8px)'
+        shadowDy: 1.5,
+        shadowBlur: 0.8,
+        shadowOpacity: 0.85,
+        highlightDy: -0.9,
+        highlightBlur: 0.5,
+        highlightOpacity: 0.6,
+        dropFilter: 'drop-shadow(0px -0.7px 0.5px rgba(0,0,0,0.75)) drop-shadow(0px 0.9px 0.5px rgba(255,255,255,0.45))'
       }
   }
 })
+
+// Unique filter IDs
+const instanceId = Math.random().toString(36).substring(2, 9)
+const debossFilterId = computed(() => `laser-deboss-${instanceId}`)
 
 // CSS Mask Styles for PNG Graphic Mode
 const imageMaskStyle = computed(() => {
@@ -115,7 +134,7 @@ const imageMaskStyle = computed(() => {
     WebkitMaskRepeat: 'no-repeat',
     maskPosition: 'center',
     WebkitMaskPosition: 'center',
-    filter: depthConfig.value.filter,
+    filter: `url(#${debossFilterId.value}) ${depthConfig.value.dropFilter}`,
     ...(props.imageStyle || {})
   }
 })
@@ -124,7 +143,35 @@ const imageMaskStyle = computed(() => {
 <template>
   <div class="relative inline-flex items-center justify-center select-none" :class="containerClass">
     
-    <!-- MODE 1: PNG / SVG GRAPHIC MASK (Clean Stainless Steel Substrate with Lid-Matched Sheen) -->
+    <!-- SVG DEBOSS FILTER DEFINITION (Physical Cavity Occlusion & Chisel Bevel) -->
+    <svg class="absolute w-0 h-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      <defs>
+        <filter :id="debossFilterId" x="-20%" y="-20%" width="140%" height="140%">
+          <!-- 1. Top-Edge Inner Cavity Shadow (Sunken Powder-Coat Wall) -->
+          <feOffset :dy="depthConfig.shadowDy" in="SourceAlpha" result="offset-down" />
+          <feGaussianBlur :stdDeviation="depthConfig.shadowBlur" in="offset-down" result="blur-down" />
+          <feComposite operator="out" in="SourceAlpha" in2="blur-down" result="top-inner-mask" />
+          <feFlood flood-color="#000000" :flood-opacity="depthConfig.shadowOpacity" result="shadow-color" />
+          <feComposite operator="in" in="shadow-color" in2="top-inner-mask" result="inner-top-shadow" />
+
+          <!-- 2. Bottom-Lip Micro Chisel Highlight (Reflective Powder-Coat Rim Cut) -->
+          <feOffset :dy="depthConfig.highlightDy" in="SourceAlpha" result="offset-up" />
+          <feGaussianBlur :stdDeviation="depthConfig.highlightBlur" in="offset-up" result="blur-up" />
+          <feComposite operator="out" in="SourceAlpha" in2="blur-up" result="bottom-lip-mask" />
+          <feFlood flood-color="#ffffff" :flood-opacity="depthConfig.highlightOpacity" result="highlight-color" />
+          <feComposite operator="in" in="highlight-color" in2="bottom-lip-mask" result="bottom-chisel-rim" />
+
+          <!-- 3. Merge: Base Substrate Graphic + Top Inner Shadow + Bottom Chisel Rim -->
+          <feMerge>
+            <feMergeNode in="SourceGraphic" />
+            <feMergeNode in="inner-top-shadow" />
+            <feMergeNode in="bottom-chisel-rim" />
+          </feMerge>
+        </filter>
+      </defs>
+    </svg>
+
+    <!-- MODE 1: PNG / SVG GRAPHIC MASK (Authentic Debossed Stainless Steel Substrate) -->
     <div
       v-if="type === 'image' && imageSrc"
       class="relative transition-all duration-200 transform-gpu overflow-hidden"
@@ -138,16 +185,16 @@ const imageMaskStyle = computed(() => {
         }"
       ></div>
 
-      <!-- Layer 2: Micro Bevel Inset Shadow for Laser Vaporization Ridge -->
+      <!-- Layer 2: Debossed Cavity Gradient (Deepens the sunken cavity from top to bottom) -->
       <div
-        class="absolute inset-0 pointer-events-none mix-blend-multiply opacity-50"
+        class="absolute inset-0 pointer-events-none mix-blend-multiply opacity-65"
         :style="{
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 25%, transparent 80%, rgba(0,0,0,0.35) 100%)'
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.15) 15%, transparent 40%, transparent 75%, rgba(0,0,0,0.2) 100%)'
         }"
       ></div>
     </div>
 
-    <!-- MODE 2: LIVE TEXT ENGRAVING (Brushed Stainless Steel with Lid-Aligned Lighting) -->
+    <!-- MODE 2: LIVE TEXT ENGRAVING (Debossed Chiseled Text Relief) -->
     <div
       v-else-if="type === 'text' && text"
       class="relative font-bold select-none transition-all duration-200 tracking-wider text-center"
@@ -159,7 +206,7 @@ const imageMaskStyle = computed(() => {
           : 'w-full max-w-full break-words'
       ]"
     >
-      <!-- Base Metal Text with Stanley Lid-Matched Reflection -->
+      <!-- Base Metal Text with Stanley Lid-Matched Reflection and Deboss Shadows -->
       <div
         class="relative inline-block"
         :style="{
@@ -167,7 +214,7 @@ const imageMaskStyle = computed(() => {
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          filter: depthConfig.filter
+          filter: depthConfig.dropFilter
         }"
       >
         <template v-if="orientation === 'vertical' && verticalLines.length > 0">
@@ -185,13 +232,38 @@ const imageMaskStyle = computed(() => {
         </template>
       </div>
 
-      <!-- Laser Trench Cast Shadow (Physical Depth Ridge) -->
+      <!-- Top Inner Shadow Layer (Debossed Cavity Wall) -->
       <div
         class="absolute inset-0 pointer-events-none -z-10 select-none"
         aria-hidden="true"
         :style="{
-          color: depthConfig.rimColor,
-          transform: depthConfig.rimOffset,
+          color: 'rgba(0,0,0,0.85)',
+          transform: orientation === 'vertical' ? 'translate(-0.8px, 0)' : 'translate(0, -0.8px)',
+          filter: 'blur(0.4px)'
+        }"
+      >
+        <template v-if="orientation === 'vertical' && verticalLines.length > 0">
+          <div
+            v-for="(line, idx) in verticalLines"
+            :key="idx"
+            class="whitespace-nowrap text-center leading-tight"
+            :class="idx > 0 ? 'mt-1' : ''"
+          >
+            {{ line }}
+          </div>
+        </template>
+        <template v-else>
+          {{ text }}
+        </template>
+      </div>
+
+      <!-- Bottom Rim Chisel Highlight Layer (Sunken Lip Reflection) -->
+      <div
+        class="absolute inset-0 pointer-events-none -z-20 select-none"
+        aria-hidden="true"
+        :style="{
+          color: 'rgba(255,255,255,0.45)',
+          transform: orientation === 'vertical' ? 'translate(0.8px, 0)' : 'translate(0, 0.9px)',
           filter: 'blur(0.3px)'
         }"
       >
@@ -223,5 +295,6 @@ const imageMaskStyle = computed(() => {
   transform: translateZ(0);
 }
 </style>
+
 
 
