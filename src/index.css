@@ -1,0 +1,178 @@
+@import "tailwindcss";
+@import "./styles/fonts.css";
+
+@theme {
+  --font-stanley: 'Stanley Favorit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Stanley Favorit', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  --color-stanley-black: #111111;
+  --color-stanley-cream: #fafafa;
+  --color-stanley-gray-light: #f5f5f5;
+  --color-stanley-gray-border: #e8e8e8;
+  --color-stanley-gray-muted: #757575;
+}
+
+:root {
+  font-family: 'Stanley Favorit', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #111111;
+  background-color: #fafafa;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Smooth transitions & Hardware Acceleration */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* GPU Hardware Layer Promotion */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Premium Micro-Animation Utilities */
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideUpFade {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes laserGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.15));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.35));
+  }
+}
+
+.animate-pop-in {
+  animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up-fade {
+  animation: slideUpFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-laser-glow {
+  animation: laserGlow 3s ease-in-out infinite;
+}
+
+/* Metallic Shimmer Overlay for Premium CTAs */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+.btn-shimmer:hover::after {
+  animation: shimmer 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Vue Step Fade Transition */
+.step-fade-enter-active,
+.step-fade-leave-active {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.step-fade-enter-from {
+  opacity: 0;
+  transform: translateY(12px) scale(0.99);
+}
+.step-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.99);
+}
+
+/* Laser-Engraved Stainless Steel Realistic Effect (Matches Tumbler Metallic Rim) */
+.laser-engraved-text {
+  background: linear-gradient(112deg, #3d4145 0%, #686d73 22%, #dce0e5 45%, #ffffff 52%, #9aa0a7 72%, #42464b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  display: inline-block;
+  user-select: none;
+}
+
+.laser-engraved-mask {
+  background: linear-gradient(112deg, #3d4145 0%, #686d73 22%, #dce0e5 45%, #ffffff 52%, #9aa0a7 72%, #42464b 100%);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  display: inline-block;
+  user-select: none;
+}
+
+.laser-etched-depth {
+  /* Drop-shadow removed per user request; smoothly blended with the product surface */
+  opacity: 0.92;
+  mix-blend-mode: normal;
+  transition: opacity 0.3s ease;
+}
+
+/* Global Writing Mode Vertical Utility (Supports Multiline Vertical Columns) */
+.writing-vertical {
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
