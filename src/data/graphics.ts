@@ -13,9 +13,9 @@ export interface GraphicItem {
   category?: 'juventus' | 'artist-drop' | 'nature' | 'animals' | 'zodiac' | 'celebrations' | 'symbols'
 }
 
-// Helper to convert clean SVG content into an SVG data URI
+// Helper to convert clean SVG content into an 8K-sharp SVG data URI
 function createSvgDataUri(svgBody: string): string {
-  const fullSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="currentColor">${svgBody}</svg>`
+  const fullSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="4096" height="4096" viewBox="0 0 100 100" fill="white" shape-rendering="geometricPrecision">${svgBody}</svg>`
   return `data:image/svg+xml;utf8,${encodeURIComponent(fullSvg)}`
 }
 

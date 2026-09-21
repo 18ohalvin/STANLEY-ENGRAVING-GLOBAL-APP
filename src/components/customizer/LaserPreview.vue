@@ -140,7 +140,7 @@ const depthConfig = computed(() => {
   }
 })
 
-// CSS Mask Styles for PNG Graphic Mode (100% reliable across all browsers & formats)
+// CSS Mask Styles for PNG Graphic Mode (8K razor-sharp rendering)
 const imageMaskStyle = computed(() => {
   if (!props.imageSrc) return {}
   return {
@@ -155,6 +155,7 @@ const imageMaskStyle = computed(() => {
     WebkitMaskRepeat: 'no-repeat',
     maskPosition: 'center',
     WebkitMaskPosition: 'center',
+    imageRendering: '-webkit-optimize-contrast',
     filter: `url(#${debossFilterId.value}) ${depthConfig.value.dropFilter}`,
     ...(props.imageStyle || {})
   }
@@ -168,14 +169,12 @@ const CY = VB_HEIGHT / 2
 </script>
 
 <template>
-  <div class="relative w-full h-full flex items-center justify-center select-none" :class="containerClass">
+  <div class="relative w-full h-full flex items-center justify-center select-none antialiased" :class="containerClass">
     
-    <!-- SVG DEBOSS FILTER DEFINITIONS -->
-    <svg class="absolute w-0 h-0 pointer-events-none overflow-hidden" aria-hidden="true">
+    <!-- SVG DEBOSS FILTER DEFINITIONS (8K Geometric Precision) -->
+    <svg class="absolute w-0 h-0 pointer-events-none overflow-hidden" aria-hidden="true" shape-rendering="geometricPrecision">
       <defs>
-        <!-- GLOBAL CYLINDRICAL REFLECTION GRADIENT
-             Because gradientUnits="userSpaceOnUse" and x1="0" x2="191" y1="0" y2="0",
-             the light bar at 64% stays strictly vertical down the cylinder! -->
+        <!-- GLOBAL CYLINDRICAL REFLECTION GRADIENT -->
         <linearGradient :id="globalRefId" gradientUnits="userSpaceOnUse" x1="0" y1="0" :x2="VB_WIDTH" y2="0">
           <stop
             v-for="(stop, idx) in reflectionStops"
@@ -185,8 +184,8 @@ const CY = VB_HEIGHT / 2
           />
         </linearGradient>
 
-        <!-- DEBOSSED TRENCH DEPTH FILTER (Top Wall Occlusion + Bottom Chisel Rim) -->
-        <filter :id="debossFilterId" x="-20%" y="-20%" width="140%" height="140%">
+        <!-- DEBOSSED TRENCH DEPTH FILTER (High-Precision UserSpace Calculations) -->
+        <filter :id="debossFilterId" x="-30%" y="-30%" width="160%" height="160%">
           <feOffset :dy="depthConfig.shadowDy" in="SourceAlpha" result="offset-down" />
           <feGaussianBlur :stdDeviation="depthConfig.shadowBlur" in="offset-down" result="blur-down" />
           <feComposite operator="out" in="SourceAlpha" in2="blur-down" result="top-inner-mask" />
@@ -208,10 +207,10 @@ const CY = VB_HEIGHT / 2
       </defs>
     </svg>
 
-    <!-- MODE 1: PNG / SVG GRAPHIC MASK (100% Reliable Mask Rendering + Debossed Shading) -->
+    <!-- MODE 1: PNG / SVG GRAPHIC MASK (8K Sub-Pixel Masked Graphic + Debossed Cavity Shading) -->
     <div
       v-if="type === 'image' && imageSrc"
-      class="relative transition-all duration-200 transform-gpu overflow-hidden flex items-center justify-center"
+      class="relative transition-all duration-200 transform-gpu overflow-hidden flex items-center justify-center will-change-transform"
       :style="imageMaskStyle"
     >
       <!-- Layer 1: Cylindrical Specular Glare Bar (at 64% width) -->
@@ -231,14 +230,16 @@ const CY = VB_HEIGHT / 2
       ></div>
     </div>
 
-    <!-- MODE 2: LIVE TEXT ENGRAVING (SVG Global Substrate Stencil: Never Rotates Reflections) -->
+    <!-- MODE 2: LIVE TEXT ENGRAVING (8K Vector Geometric Precision Typography) -->
     <svg
       v-else-if="type === 'text' && text"
       :viewBox="`0 0 ${VB_WIDTH} ${VB_HEIGHT}`"
       class="w-full h-full max-w-full max-h-full overflow-visible pointer-events-none"
+      shape-rendering="geometricPrecision"
+      text-rendering="geometricPrecision"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <!-- Vertical Text: Text rotates, but fill="url(#globalRef)" stays pinned to cylinder! -->
+      <!-- Vertical Text: 8K Sub-pixel crisp vector text -->
       <g v-if="orientation === 'vertical'" :filter="`url(#${debossFilterId})`" class="laser-surface">
         <text
           v-for="(line, idx) in processedVerticalLines"
@@ -252,13 +253,15 @@ const CY = VB_HEIGHT / 2
           :font-size="numericFontSize"
           font-weight="bold"
           letter-spacing="0.08em"
+          shape-rendering="geometricPrecision"
+          text-rendering="geometricPrecision"
           :transform="`rotate(-90 ${CX + (idx - (processedVerticalLines.length - 1) / 2) * (numericFontSize * 1.15)} ${CY})`"
         >
           {{ line }}
         </text>
       </g>
 
-      <!-- Horizontal Text -->
+      <!-- Horizontal Text: 8K Sub-pixel crisp vector text -->
       <g v-else :filter="`url(#${debossFilterId})`" class="laser-surface">
         <text
           :x="CX"
@@ -270,6 +273,8 @@ const CY = VB_HEIGHT / 2
           :font-size="numericFontSize"
           font-weight="bold"
           letter-spacing="0.05em"
+          shape-rendering="geometricPrecision"
+          text-rendering="geometricPrecision"
         >
           {{ displayText }}
         </text>
@@ -285,6 +290,8 @@ const CY = VB_HEIGHT / 2
 .laser-surface {
   will-change: transform, filter;
   transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 </style>
 
