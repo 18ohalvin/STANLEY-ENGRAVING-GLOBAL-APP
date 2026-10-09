@@ -13,6 +13,7 @@ interface Props {
   imageStyle?: Record<string, string | number>
   isLightTumbler?: boolean
   depthLevel?: 'subtle' | 'standard' | 'deep'
+  placement?: 'center' | 'top' | 'bottom'
   containerClass?: string
   viewBoxWidth?: number
   viewBoxHeight?: number
@@ -29,6 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
   imageSrc: '',
   isLightTumbler: false,
   depthLevel: 'standard',
+  placement: 'center',
   containerClass: '',
   viewBoxWidth: 0,
   viewBoxHeight: 0
@@ -40,32 +42,43 @@ const globalRefId = computed(() => `global-ref-${instanceId}`)
 const debossFilterId = computed(() => `laser-deboss-${instanceId}`)
 
 /**
- * EXACT STANLEY LID COLLAR REFLECTION PROFILE (Sampled at Y=248)
- * Light profile across the cylinder (left to right):
- * - 0% - 5%: Dark brushed steel left edge (#5e6063)
- * - 14% - 18%: Secondary soft ambient fill highlight (#c8c7c5)
- * - 34% - 44%: Core shadow trough (#4a4c4e -> #585a5e)
- * - 57% - 70%: PRIMARY SPECULAR REFLECTION BAR (Peak at 64% with #ffffff)
- * - 76% - 88%: Dark right shadow falloff (#6a6c70 -> #4d4f52)
- * - 95% - 100%: Right ambient rim catch (#6e7073)
+ * EXACT STANLEY LID COLLAR REFLECTION PROFILE (Sampled across cylinder)
+ * Ultra-smooth cosine/smoothstep continuous metallic reflection curve:
+ * - 0% - 15%: Soft brushed steel left ambient rim
+ * - 15% - 35%: Ambient silver mid-tone
+ * - 35% - 50%: Smooth core cylinder shadow trough
+ * - 50% - 63%: Creamy rise to specular shoulder
+ * - 63% - 67%: Specular metallic reflection peak (aligned with Stanley lid collar at ~65%)
+ * - 67% - 82%: Smooth specular falloff into right shadow
+ * - 82% - 93%: Deep right shadow valley
+ * - 93% - 100%: Right ambient rim catch
  */
 const reflectionStops = [
-  { offset: '0%', color: '#5e6063' },
-  { offset: '6%', color: '#7a7c80' },
-  { offset: '14%', color: '#c8c7c5' },
-  { offset: '20%', color: '#bdbcb9' },
-  { offset: '34%', color: '#4a4c4e' },
-  { offset: '40%', color: '#444547' },
-  { offset: '46%', color: '#585a5e' },
-  { offset: '52%', color: '#8a8d92' },
-  { offset: '57%', color: '#e2e0df' },
-  { offset: '62%', color: '#f8f6f5' },
-  { offset: '64%', color: '#ffffff' },
-  { offset: '69%', color: '#dedcdb' },
-  { offset: '76%', color: '#6a6c70' },
-  { offset: '84%', color: '#4d4f52' },
-  { offset: '92%', color: '#3d3e40' },
-  { offset: '100%', color: '#6e7073' }
+  { offset: '0%', color: '#626468' },
+  { offset: '4%', color: '#6c6f73' },
+  { offset: '8%', color: '#7b7e83' },
+  { offset: '13%', color: '#919499' },
+  { offset: '18%', color: '#a6a8ad' },
+  { offset: '24%', color: '#9c9ea3' },
+  { offset: '30%', color: '#83868b' },
+  { offset: '36%', color: '#65686d' },
+  { offset: '42%', color: '#505256' },
+  { offset: '48%', color: '#4f5155' },
+  { offset: '53%', color: '#616469' },
+  { offset: '57%', color: '#8c8f95' },
+  { offset: '60%', color: '#bebfc3' },
+  { offset: '62.5%', color: '#e9e9ea' },
+  { offset: '64%', color: '#faf9f8' },
+  { offset: '65%', color: '#ffffff' },
+  { offset: '66%', color: '#faf9f8' },
+  { offset: '67.5%', color: '#eae9ea' },
+  { offset: '70%', color: '#c1c2c6' },
+  { offset: '74%', color: '#8c8e94' },
+  { offset: '79%', color: '#5f6166' },
+  { offset: '85%', color: '#4a4c50' },
+  { offset: '91%', color: '#484a4e' },
+  { offset: '96%', color: '#5e6064' },
+  { offset: '100%', color: '#6e7075' }
 ]
 
 const metallicGradientCss = computed(() => {
@@ -77,6 +90,7 @@ const metallicGradientCss = computed(() => {
 const containerRef = ref<HTMLElement | null>(null)
 const detectedWidth = ref(191)
 const detectedHeight = ref(280)
+let resizeObserver: ResizeObserver | null = null
 
 const updateDimensions = () => {
   if (containerRef.value) {
@@ -91,6 +105,12 @@ onMounted(() => {
   updateDimensions()
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', updateDimensions)
+    if (containerRef.value && 'ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(() => {
+        updateDimensions()
+      })
+      resizeObserver.observe(containerRef.value)
+    }
   }
 })
 
@@ -98,9 +118,13 @@ onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', updateDimensions)
   }
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
 })
 
-watch(() => [props.viewBoxWidth, props.viewBoxHeight, props.text, props.imageSrc, props.orientation], () => {
+watch(() => [props.viewBoxWidth, props.viewBoxHeight, props.text, props.fontClass, props.fontSizeClass, props.fontSize, props.imageSrc, props.orientation, props.placement, props.containerClass], () => {
   nextTick(updateDimensions)
 })
 
@@ -143,6 +167,14 @@ const parsedFontFamily = computed(() => {
   if (fc.includes('Cinzel')) return "'Cinzel', serif"
   if (fc.includes('Playfair_Display') || fc.includes('Playfair Display')) return "'Playfair Display', 'Playfair_Display', serif"
   if (fc.includes('Bebas_Neue') || fc.includes('Bebas Neue')) return "'Bebas Neue', 'Bebas_Neue', sans-serif"
+  if (fc.includes('Great_Vibes') || fc.includes('Great Vibes')) return "'Great Vibes', 'Great_Vibes', cursive"
+  if (fc.includes('Pacifico')) return "'Pacifico', cursive"
+  if (fc.includes('Permanent_Marker') || fc.includes('Permanent Marker')) return "'Permanent Marker', 'Permanent_Marker', cursive"
+  if (fc.includes('Righteous')) return "'Righteous', sans-serif"
+  if (fc.includes('Montserrat')) return "'Montserrat', sans-serif"
+  if (fc.includes('Oswald')) return "'Oswald', sans-serif"
+  if (fc.includes('Abril_Fatface') || fc.includes('Abril Fatface')) return "'Abril Fatface', 'Abril_Fatface', serif"
+  if (fc.includes('Alfa_Slab_One') || fc.includes('Alfa Slab One')) return "'Alfa Slab One', 'Alfa_Slab_One', serif"
   if (fc.includes('serif')) return 'Georgia, Cambria, serif'
   if (fc.includes('mono')) return 'Menlo, Monaco, Consolas, monospace'
   return "'Stanley_Favorit', sans-serif"
@@ -150,7 +182,7 @@ const parsedFontFamily = computed(() => {
 
 const isUppercase = computed(() => {
   const fc = props.fontClass || ''
-  return fc.includes('uppercase') || fc.includes('Cinzel') || fc.includes('Bebas')
+  return fc.includes('uppercase') || fc.includes('Cinzel') || fc.includes('Bebas') || fc.includes('Oswald')
 })
 
 const parsedLetterSpacing = computed(() => {
@@ -174,6 +206,31 @@ const processedVerticalLines = computed(() => {
 const horizontalLines = computed(() => {
   if (!displayText.value) return []
   return displayText.value.split('\n')
+})
+
+// Dynamic vertical center point adapting to top/center/bottom placement
+const textCenterY = computed(() => {
+  if (props.placement === 'top') {
+    if (props.orientation === 'vertical') {
+      const maxColLen = Math.max(...(processedVerticalLines.value.map(l => l.length) || [1]), 1)
+      const estColHeight = maxColLen * (numericFontSize.value * 0.52)
+      return Math.min(CY.value, Math.max(estColHeight / 2 + 4, 10))
+    } else {
+      const totalH = (horizontalLines.value.length || 1) * (numericFontSize.value * 1.00)
+      return Math.min(CY.value, totalH / 2 + 6)
+    }
+  }
+  if (props.placement === 'bottom') {
+    if (props.orientation === 'vertical') {
+      const maxColLen = Math.max(...(processedVerticalLines.value.map(l => l.length) || [1]), 1)
+      const estColHeight = maxColLen * (numericFontSize.value * 0.52)
+      return Math.max(CY.value, VB_HEIGHT.value - estColHeight / 2 - 4)
+    } else {
+      const totalH = (horizontalLines.value.length || 1) * (numericFontSize.value * 1.00)
+      return Math.max(CY.value, VB_HEIGHT.value - totalH / 2 - 6)
+    }
+  }
+  return CY.value
 })
 
 // Depth relief configuration for true physical DEBOSSED effect:
@@ -204,33 +261,82 @@ const depthConfig = computed(() => {
       return {
         shadowDy: 1.5,
         shadowBlur: 0.8,
-        shadowOpacity: 0.85,
-        highlightDy: -0.9,
+        shadowOpacity: 0.88,
+        highlightDy: -0.8,
         highlightBlur: 0.5,
-        highlightOpacity: 0.65,
-        dropFilter: 'drop-shadow(0px -0.7px 0.5px rgba(0,0,0,0.75)) drop-shadow(0px 0.9px 0.5px rgba(255,255,255,0.45))'
+        highlightOpacity: 0.70,
+        dropFilter: 'drop-shadow(0px -0.8px 0.5px rgba(0,0,0,0.88)) drop-shadow(0px 1.0px 0.5px rgba(255,255,255,0.55)) drop-shadow(0px 0px 0.8px rgba(0,0,0,0.4))'
       }
   }
 })
 
-// CSS Mask Styles for PNG Graphic Mode (8K razor-sharp rendering)
+// Container wrapper style for image
+const imageWrapperStyle = computed(() => {
+  return {
+    width: '100%',
+    height: '100%',
+    ...(props.imageStyle || {})
+  }
+})
+
+const maskPositionVal = computed(() => {
+  if (props.placement === 'top') return 'center top'
+  if (props.placement === 'bottom') return 'center bottom'
+  return 'center center'
+})
+
+// CSS Mask Styles for PNG Graphic Base Metal Layer with Exterior Deboss Drop Shadows
 const imageMaskStyle = computed(() => {
   if (!props.imageSrc) return {}
+  const engravableZoneWidth = props.viewBoxWidth || detectedWidth.value || 190
   return {
-    width: '110px',
-    height: '110px',
+    width: '100%',
+    height: '100%',
     background: metallicGradientCss.value,
+    backgroundSize: `${engravableZoneWidth}px 100%`,
+    backgroundPosition: 'center center',
     maskImage: `url('${props.imageSrc}')`,
     WebkitMaskImage: `url('${props.imageSrc}')`,
     maskSize: 'contain',
     WebkitMaskSize: 'contain',
     maskRepeat: 'no-repeat',
     WebkitMaskRepeat: 'no-repeat',
-    maskPosition: 'center',
-    WebkitMaskPosition: 'center',
+    maskPosition: maskPositionVal.value,
+    WebkitMaskPosition: maskPositionVal.value,
     imageRendering: '-webkit-optimize-contrast',
-    filter: `url(#${debossFilterId.value}) ${depthConfig.value.dropFilter}`,
-    ...(props.imageStyle || {})
+    filter: `${depthConfig.value.dropFilter} contrast(1.12) brightness(0.98)`
+  }
+})
+
+// Top & Inner Shadow Mask Layer for laser deboss trench depth
+const innerShadowMaskStyle = computed(() => {
+  if (!props.imageSrc) return {}
+  return {
+    maskImage: `url('${props.imageSrc}')`,
+    WebkitMaskImage: `url('${props.imageSrc}')`,
+    maskSize: 'contain',
+    WebkitMaskSize: 'contain',
+    maskRepeat: 'no-repeat',
+    WebkitMaskRepeat: 'no-repeat',
+    maskPosition: maskPositionVal.value,
+    WebkitMaskPosition: maskPositionVal.value,
+    background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.25) 30%, transparent 65%)'
+  }
+})
+
+// Bottom Chisel Rim Highlight Layer for laser-etched edge gleam
+const bottomRimMaskStyle = computed(() => {
+  if (!props.imageSrc) return {}
+  return {
+    maskImage: `url('${props.imageSrc}')`,
+    WebkitMaskImage: `url('${props.imageSrc}')`,
+    maskSize: 'contain',
+    WebkitMaskSize: 'contain',
+    maskRepeat: 'no-repeat',
+    WebkitMaskRepeat: 'no-repeat',
+    maskPosition: maskPositionVal.value,
+    WebkitMaskPosition: maskPositionVal.value,
+    background: 'linear-gradient(0deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.18) 22%, transparent 55%)'
   }
 })
 </script>
@@ -238,8 +344,8 @@ const imageMaskStyle = computed(() => {
 <template>
   <div
     ref="containerRef"
-    class="relative flex items-center justify-center select-none antialiased"
-    :class="[type === 'image' ? 'pointer-events-none' : 'w-full h-full pointer-events-none', containerClass]"
+    class="relative flex items-center justify-center select-none antialiased w-full h-full pointer-events-none"
+    :class="containerClass"
   >
     <!-- SVG DEBOSS FILTER DEFINITIONS (8K Geometric Precision) -->
     <svg class="absolute w-0 h-0 pointer-events-none overflow-hidden" aria-hidden="true" shape-rendering="geometricPrecision">
@@ -277,27 +383,28 @@ const imageMaskStyle = computed(() => {
       </defs>
     </svg>
 
-    <!-- MODE 1: PNG / SVG GRAPHIC MASK (8K Sub-Pixel Masked Graphic + Debossed Cavity Shading) -->
+    <!-- MODE 1: PNG / SVG GRAPHIC MASK (8K Sub-Pixel Masked Graphic with Consistent Cylinder Reflection & Deboss) -->
     <div
       v-if="type === 'image' && imageSrc"
-      class="relative transition-all duration-200 transform-gpu overflow-hidden flex items-center justify-center will-change-transform"
-      :style="imageMaskStyle"
+      class="relative transition-all duration-200 transform-gpu overflow-visible flex items-center justify-center will-change-transform laser-graphic-deboss"
+      :style="imageWrapperStyle"
     >
-      <!-- Layer 1: Cylindrical Specular Glare Bar (at 64% width) -->
+      <!-- Base Metallic Brushed Steel Layer with Edge Deboss Bevel & Drop Shadow -->
       <div
-        class="absolute inset-0 pointer-events-none mix-blend-soft-light opacity-90"
-        :style="{
-          background: 'linear-gradient(90deg, transparent 0%, transparent 45%, rgba(255,255,255,0.7) 60%, rgba(255,255,255,0.95) 64%, rgba(255,255,255,0.5) 70%, transparent 85%)'
-        }"
-      ></div>
-
-      <!-- Layer 2: Debossed Cavity Gradient (Top-to-bottom depth shadow) -->
-      <div
-        class="absolute inset-0 pointer-events-none mix-blend-multiply opacity-65"
-        :style="{
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.15) 15%, transparent 40%, transparent 75%, rgba(0,0,0,0.2) 100%)'
-        }"
-      ></div>
+        class="w-full h-full relative"
+        :style="imageMaskStyle"
+      >
+        <!-- Inner Cavity Top Shadow (Recessed Depth) -->
+        <div
+          class="absolute inset-0 pointer-events-none opacity-80 mix-blend-multiply"
+          :style="innerShadowMaskStyle"
+        ></div>
+        <!-- Bottom Rim Specular Highlight (Chisel Edge) -->
+        <div
+          class="absolute inset-0 pointer-events-none opacity-65 mix-blend-screen"
+          :style="bottomRimMaskStyle"
+        ></div>
+      </div>
     </div>
 
     <!-- MODE 2: LIVE TEXT ENGRAVING (8K Vector Geometric Precision Typography) -->
@@ -314,8 +421,8 @@ const imageMaskStyle = computed(() => {
         <text
           v-for="(line, idx) in processedVerticalLines"
           :key="idx"
-          :x="CX + (idx - (processedVerticalLines.length - 1) / 2) * (numericFontSize * 1.15)"
-          :y="CY"
+          :x="CX + (idx - (processedVerticalLines.length - 1) / 2) * (numericFontSize * 1.06)"
+          :y="textCenterY"
           :fill="`url(#${globalRefId})`"
           text-anchor="middle"
           dominant-baseline="central"
@@ -325,7 +432,7 @@ const imageMaskStyle = computed(() => {
           :letter-spacing="parsedLetterSpacing"
           shape-rendering="geometricPrecision"
           text-rendering="geometricPrecision"
-          :transform="`rotate(-90 ${CX + (idx - (processedVerticalLines.length - 1) / 2) * (numericFontSize * 1.15)} ${CY})`"
+          :transform="`rotate(-90 ${CX + (idx - (processedVerticalLines.length - 1) / 2) * (numericFontSize * 1.06)} ${textCenterY})`"
         >
           {{ line }}
         </text>
@@ -335,7 +442,7 @@ const imageMaskStyle = computed(() => {
       <g v-else :filter="`url(#${debossFilterId})`" class="laser-surface">
         <text
           :x="CX"
-          :y="CY"
+          :y="textCenterY"
           :fill="`url(#${globalRefId})`"
           text-anchor="middle"
           dominant-baseline="central"
@@ -351,7 +458,7 @@ const imageMaskStyle = computed(() => {
               v-for="(line, idx) in horizontalLines"
               :key="idx"
               :x="CX"
-              :dy="idx === 0 ? `-${(horizontalLines.length - 1) * 0.55}em` : '1.15em'"
+              :dy="idx === 0 ? `-${(horizontalLines.length - 1) * 0.50}em` : '1.00em'"
             >
               {{ line }}
             </tspan>

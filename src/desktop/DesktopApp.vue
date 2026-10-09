@@ -35,15 +35,20 @@ const isCustomizerOpen = ref(false)
 const cartToast = ref<string | null>(null)
 
 // Navigation & Actions
+const selectedCampaignId = ref<string | undefined>(undefined)
+
 const handleSelectInspirationCard = (card: InspirationCard) => {
   if (card.id === 'faq') {
     isFaqModalOpen.value = true
-  } else if (card.id === 'artist-drops') {
-    isArtistDropModalOpen.value = true
   } else {
-    selectedInspirationCard.value = card
-    isInspirationModalOpen.value = true
+    selectedCampaignId.value = card.campaignId || 'autumn-26'
+    isArtistDropModalOpen.value = true
   }
+}
+
+const handleOpenTrendingModal = () => {
+  selectedCampaignId.value = 'autumn-26'
+  isArtistDropModalOpen.value = true
 }
 
 const handleSeeDetails = (product: Product) => {
@@ -73,10 +78,17 @@ const handleEditorLoadingComplete = () => {
   isCustomizerOpen.value = true
 }
 
-const handleHeroNavigate = (_productId?: string) => {
-  // Hero CTA button opens the Select Stanley Pop Up Modal in explore mode
-  selectStanleyModalMode.value = 'explore'
-  isSelectStanleyModalOpen.value = true
+const handleHeroNavigate = (productId?: string, campaignId?: string) => {
+  if (campaignId) {
+    selectedCampaignId.value = campaignId
+    isArtistDropModalOpen.value = true
+  } else if (productId) {
+    const product = PRODUCTS.find(p => p.id === productId) || PRODUCTS[0]
+    handleDesignNow(product)
+  } else {
+    selectStanleyModalMode.value = 'explore'
+    isSelectStanleyModalOpen.value = true
+  }
 }
 
 const scrollToLineup = () => {
@@ -93,12 +105,35 @@ const handleAddToCart = (payload: any) => {
     cartToast.value = null
   }, 4000)
 }
+
+const handleSelectGraphicCollectionFromMenu = (category: string) => {
+  selectedCampaignId.value = category
+  isArtistDropModalOpen.value = true
+}
+
+const handleSelectProductFromMenu = (productId: string) => {
+  const product = PRODUCTS.find(p => p.id === productId) || PRODUCTS[0]
+  handleDesignNow(product)
+}
+
+const handleOpenCorporateFromMenu = () => {
+  // Direct into customizer with first product
+  handleDesignNow(PRODUCTS[0])
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-white text-black flex flex-col font-['Stanley_Favorit',sans-serif]">
-    <!-- Top Navigation Header -->
-    <MainHeader @explore="scrollToLineup" />
+  <div class="min-h-screen bg-white text-black flex flex-col font-['Stanley_Favorit',sans-serif] overflow-x-hidden">
+    <!-- Top Navigation Header with Figma Mega Menu -->
+    <MainHeader
+      @explore="scrollToLineup"
+      @select-graphic-collection="handleSelectGraphicCollectionFromMenu"
+      @design-now="handleDesignNow"
+      @see-details="handleSeeDetails"
+      @open-corporate-modal="handleOpenCorporateFromMenu"
+      @open-trending-modal="handleOpenTrendingModal"
+      @open-faq="isFaqModalOpen = true"
+    />
 
     <!-- Main Content Area -->
     <main class="flex-1">
@@ -108,10 +143,10 @@ const handleAddToCart = (payload: any) => {
         @scroll-lineup="scrollToLineup"
       />
 
-      <!-- 2. Get Inspired Carousel (Figma Node 5058:6133) -->
-      <InspirationSection
+      <!-- 2. Get Inspired Carousel (Figma Node 5058:6133 / 5772:508) -->
+      <GetToKnowMore
         @select-card="handleSelectInspirationCard"
-        @see-all="handleSelectInspirationCard"
+        @open-faq="isFaqModalOpen = true"
       />
 
       <!-- 3. Explore The Lineup (Figma Node 5058:6147 / 4993:2338) -->
@@ -153,11 +188,11 @@ const handleAddToCart = (payload: any) => {
 
     <ArtistDropModal
       :is-open="isArtistDropModalOpen"
+      :campaign-id="selectedCampaignId"
       @close="isArtistDropModalOpen = false"
       @start-engrave="(graphicId) => {
         isArtistDropModalOpen = false
-        const mappedId = graphicId === 'viking-de-juve' ? 'viking-juve' : graphicId
-        handleDesignNow(PRODUCTS[0], undefined, mappedId)
+        handleDesignNow(PRODUCTS[0], undefined, graphicId)
       }"
     />
 

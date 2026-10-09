@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { X, ChevronDown, Check } from 'lucide-vue-next'
+import { ref, computed, watch } from 'vue'
+import { X, ChevronDown } from 'lucide-vue-next'
 import iceflowImg from '@/assets/images/artist-drop-iceflow.png'
-import { topGraphics } from '@/data/graphics'
+import { topGraphics, graphicCampaigns, type GraphicItem } from '@/data/graphics'
+import LaserPreview from '@/components/customizer/LaserPreview.vue'
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean
+  campaignId?: string
 }>()
 
 const emit = defineEmits<{
@@ -14,14 +16,48 @@ const emit = defineEmits<{
   (e: 'switch-card', cardId: string): void
 }>()
 
-const graphics = topGraphics
-const selectedGraphicId = ref<string>(topGraphics[0]?.id || 'stanley-bear-crest')
+const activeCampaign = computed(() => {
+  if (props.campaignId) {
+    return graphicCampaigns.find(c => c.id === props.campaignId) || null
+  }
+  return null
+})
+
+const graphics = computed<GraphicItem[]>(() => {
+  return activeCampaign.value?.graphics || topGraphics
+})
+
+const modalTitle = computed(() => {
+  return activeCampaign.value ? activeCampaign.value.title : 'Artist drop inspirations'
+})
+
+const modalSubtitle = computed(() => {
+  return activeCampaign.value ? activeCampaign.value.description : 'Explore unique creations from talented artists and see how different styles come to life.'
+})
+
+const sectionTitle = computed(() => {
+  return activeCampaign.value ? activeCampaign.value.subtitle : 'Top 5 Artworks.'
+})
+
+const selectedGraphicId = ref<string>(graphics.value[0]?.id || 'stanley-bear-crest')
 const isDropdownOpen = ref(false)
 
 const shortcutOptions = [
   { id: 'guided-ai', title: 'Guided to generation' },
   { id: 'faq', title: 'What people are asking' },
 ]
+
+watch(() => props.campaignId, () => {
+  if (graphics.value.length > 0) {
+    selectedGraphicId.value = graphics.value[0].id
+  }
+}, { immediate: true })
+
+watch(() => props.isOpen, (newVal) => {
+  if (newVal && graphics.value.length > 0) {
+    selectedGraphicId.value = graphics.value[0].id
+  }
+})
 
 const selectGraphic = (id: string) => {
   selectedGraphicId.value = id
@@ -37,8 +73,8 @@ const handleSelectCardShortcut = (cardId: string) => {
 }
 
 const getActiveGraphicImage = () => {
-  const g = graphics.find(item => item.id === selectedGraphicId.value)
-  return g ? g.image : juveVikingImg
+  const g = graphics.value.find(item => item.id === selectedGraphicId.value)
+  return g ? g.img : graphics.value[0]?.img
 }
 </script>
 
@@ -60,7 +96,7 @@ const getActiveGraphicImage = () => {
             data-node-id="5682:6624"
           >
             <h1 class="font-['Stanley_Favorit',sans-serif] font-medium text-[20px] text-black tracking-[-0.6px] leading-none whitespace-nowrap" data-node-id="5682:6625">
-              Artist drop inspirations
+              {{ modalTitle }}
             </h1>
             <ChevronDown
               :size="16"
@@ -131,10 +167,12 @@ const getActiveGraphicImage = () => {
                 data-node-id="5635:11845"
               >
                 <div class="w-[188px] h-[188px] flex items-center justify-center transition-all duration-300">
-                  <img
-                    :src="getActiveGraphicImage()"
-                    alt="Engraved Artwork"
-                    class="max-w-full max-h-full object-contain filter drop-shadow-sm brightness-110 opacity-90 transition-all duration-300 transform-gpu"
+                  <LaserPreview
+                    type="image"
+                    :image-src="getActiveGraphicImage()"
+                    :is-light-tumbler="true"
+                    depth-level="standard"
+                    class="w-[160px] h-[160px]"
                   />
                 </div>
               </div>
@@ -150,14 +188,14 @@ const getActiveGraphicImage = () => {
                 class="font-['Stanley_Favorit',sans-serif] font-normal text-[16px] text-[#666666] leading-[1.5]"
                 data-node-id="5219:6519"
               >
-                Explore unique creations from talented artists and see how different styles come to life.
+                {{ modalSubtitle }}
               </p>
 
               <!-- Top 5 Artworks Container (Figma Node 5219:6343) -->
               <div class="flex flex-col gap-[16px] w-full" data-node-id="5219:6343">
                 <div class="flex items-center w-full" data-node-id="5219:6344">
                   <h2 class="font-['Stanley_Favorit',sans-serif] font-medium text-[20px] text-black leading-[1.5]" data-node-id="5219:6345">
-                    Top 5 Artworks.
+                    {{ sectionTitle }}
                   </h2>
                 </div>
 

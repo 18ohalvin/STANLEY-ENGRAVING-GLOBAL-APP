@@ -8,6 +8,12 @@ import quencherGreenImg from '@/assets/products/quencher-green.png'
 import cardQuestionsImg from '@/assets/images/card-questions.png'
 import cardGuidedImg from '@/assets/images/card-guided.png'
 import cardArtistDropImg from '@/assets/images/card-artist-drop.png'
+import bannerBarbieHeroImg from '@/assets/images/banner-barbie-hero.jpg'
+
+import trending1Img from '@/assets/images/trending-1.jpg'
+import trending2Img from '@/assets/images/trending-2.jpg'
+import trending3Img from '@/assets/images/trending-3.jpg'
+import trending4Img from '@/assets/images/trending-4.jpg'
 
 export interface ProductColor {
   name: string
@@ -40,10 +46,10 @@ export interface EngravingProfile {
 export const DEFAULT_ENGRAVING_PROFILE: EngravingProfile = {
   zoneWidth: 191,
   zoneHeight: 280,
-  maxSoloGraphicHeight: 150,
-  largeGraphicHeight: 150,
-  standardGraphicHeight: 100,
-  smallGraphicHeight: 70,
+  maxSoloGraphicHeight: 182,
+  largeGraphicHeight: 182,
+  standardGraphicHeight: 135,
+  smallGraphicHeight: 100,
   charLimits: {
     solo: { S: 100, M: 80, L: 60, XL: 40 },
     withLargeGraphic: { S: 60, M: 45, L: 30, XL: 20 },
@@ -76,54 +82,65 @@ export interface Product {
 export interface InspirationCard {
   id: string
   titleLine1: string
-  titleLine2: string
-  tag: string
+  titleLine2?: string
+  subtitle?: string
+  tag?: string
   image: string
   bgColor?: string
   textColor: 'black' | 'white'
+  gradientOverlay?: string
   description: string
+  campaignId?: string
 }
 
 export const INSPIRATION_CARDS: InspirationCard[] = [
   {
-    id: 'faq',
-    titleLine1: 'What People',
-    titleLine2: 'Are Asking',
-    tag: 'FAQ & Care',
-    image: cardQuestionsImg,
-    bgColor: '#e7e7d5',
-    textColor: 'black',
-    description: 'Learn how our precision laser engraving works, warranty coverage, and tumbler care instructions.',
-  },
-  {
-    id: 'guided-ai',
-    titleLine1: 'Guided to Generate',
-    titleLine2: 'Your Design',
-    tag: 'AI Studio',
-    image: cardGuidedImg,
-    bgColor: '#242a30',
+    id: 'autumn-26',
+    titleLine1: "Autumn '26 Collection",
+    subtitle: 'Limited-edition outdoors and nature graphics.',
+    tag: "Autumn '26",
+    image: trending1Img,
+    bgColor: '#16281a',
     textColor: 'white',
-    description: 'Explore custom vector prompts and smart layout suggestions for a truly unique engraved piece.',
+    gradientOverlay: 'linear-gradient(180deg, rgba(16, 36, 21, 0.88) 0%, rgba(16, 36, 21, 0.45) 45%, transparent 80%)',
+    description: 'Limited-edition outdoors and nature graphics for the season.',
+    campaignId: 'autumn-26',
   },
   {
-    id: 'artist-drops',
-    titleLine1: 'Get Inspired by Artist',
-    titleLine2: 'Designs Drop',
-    tag: 'Limited Drops',
-    image: cardArtistDropImg,
-    bgColor: '#f6eafa',
+    id: 'world-cup-vibes',
+    titleLine1: 'World Cup Vibes',
+    subtitle: 'Rep your favorite team front and center.',
+    tag: 'World Cup',
+    image: trending2Img,
+    bgColor: '#edf1f5',
     textColor: 'black',
-    description: 'Browse curated collaborations including the exclusive Stanley x Liunic on Things collection.',
+    gradientOverlay: 'linear-gradient(180deg, rgba(240, 243, 247, 0.92) 0%, rgba(240, 243, 247, 0.5) 45%, transparent 80%)',
+    description: 'Rep your favorite team front and center with laser engraved logos.',
+    campaignId: 'world-cup',
   },
   {
-    id: 'artist-showcase-2',
-    titleLine1: 'Exclusive Studio',
-    titleLine2: 'Monogram Sets',
-    tag: 'Typography',
-    image: cardArtistDropImg,
-    bgColor: '#eef2f6',
-    textColor: 'black',
-    description: 'Choose from architectural monograms, minimal initials, and precision coordinates.',
+    id: 'automotive-lovers',
+    titleLine1: 'Automotive Lovers? Join here.',
+    subtitle: 'Precision motorsport insignias and race badges.',
+    tag: 'Automotive',
+    image: trending3Img,
+    bgColor: '#3f1f2e',
+    textColor: 'white',
+    gradientOverlay: 'linear-gradient(180deg, rgba(58, 26, 40, 0.86) 0%, rgba(58, 26, 40, 0.42) 45%, transparent 80%)',
+    description: 'Precision motorsport insignias and race badges.',
+    campaignId: 'automotive',
+  },
+  {
+    id: 'college-logo',
+    titleLine1: 'Find Your Exclusive College Logo',
+    subtitle: 'Collegiate pillar crests and campus emblems.',
+    tag: 'Collegiate',
+    image: trending4Img,
+    bgColor: '#540f2c',
+    textColor: 'white',
+    gradientOverlay: 'linear-gradient(180deg, rgba(82, 12, 42, 0.88) 0%, rgba(82, 12, 42, 0.42) 45%, transparent 80%)',
+    description: 'Collegiate pillar crests and campus emblems.',
+    campaignId: 'college',
   },
 ]
 
@@ -142,18 +159,18 @@ export const PRODUCTS: Product[] = [
     sizes: ['40 oz', '30 oz'],
     colors: [
       { name: 'Hammertone Green', hex: '#637554', image: quencherGreenImg },
-      { name: 'Rose Quartz', hex: '#E8C5C8', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Rose-Quartz-Hero_1000x.jpg' },
-      { name: 'Eucalyptus Green', hex: '#8FA396', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-FlowState-Eucalyptus-Hero_1000x.jpg' },
-      { name: 'Cream', hex: '#F5F2EB', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-FlowState-Cream-Hero_1000x.jpg' },
-      { name: 'Matte Charcoal', hex: '#363839', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Charcoal-Hero_1000x.jpg' },
-      { name: 'Fog Gray', hex: '#8C9BA5', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Fog-Hero_1000x.jpg' },
-      { name: 'Pool Cyan', hex: '#73B2C6', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Pool-Hero_1000x.jpg' },
-      { name: 'Tigerlily Orange', hex: '#E65D47', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Tigerlily-Hero_1000x.jpg' },
-      { name: 'Iris Violet', hex: '#616A94', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Iris-Hero_1000x.jpg' },
-      { name: 'Black', hex: '#1C1C1C', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Black-Hero_1000x.jpg' },
-      { name: 'Ash Gray', hex: '#B5B7B5', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Ash-Hero_1000x.jpg' },
-      { name: 'Peony Pink', hex: '#F4A6BA', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Peony-Hero_1000x.jpg' },
-      { name: 'Wisteria Lavender', hex: '#C3B1E1', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Wisteria-Hero_1000x.jpg' }
+      { name: 'Rose Quartz', hex: '#E8C5C8', image: quencherGreenImg },
+      { name: 'Eucalyptus Green', hex: '#8FA396', image: quencherGreenImg },
+      { name: 'Cream', hex: '#F5F2EB', image: quencherGreenImg },
+      { name: 'Matte Charcoal', hex: '#363839', image: quencherGreenImg },
+      { name: 'Fog Gray', hex: '#8C9BA5', image: quencherGreenImg },
+      { name: 'Pool Cyan', hex: '#73B2C6', image: quencherGreenImg },
+      { name: 'Tigerlily Orange', hex: '#E65D47', image: quencherGreenImg },
+      { name: 'Iris Violet', hex: '#616A94', image: quencherGreenImg },
+      { name: 'Black', hex: '#1C1C1C', image: quencherGreenImg },
+      { name: 'Ash Gray', hex: '#B5B7B5', image: quencherGreenImg },
+      { name: 'Peony Pink', hex: '#F4A6BA', image: quencherGreenImg },
+      { name: 'Wisteria Lavender', hex: '#C3B1E1', image: quencherGreenImg }
     ]
   },
   {
@@ -170,12 +187,12 @@ export const PRODUCTS: Product[] = [
     sizes: ['40 oz'],
     colors: [
       { name: 'Peach Glaze', hex: '#F4856E', image: quencherProTourImg },
-      { name: 'Rose Quartz', hex: '#E8C5C8', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Rose-Quartz-Hero_1000x.jpg' },
-      { name: 'Eucalyptus', hex: '#8FA396', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-FlowState-Eucalyptus-Hero_1000x.jpg' },
-      { name: 'Cream', hex: '#F5F2EB', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-FlowState-Cream-Hero_1000x.jpg' },
-      { name: 'Midnight Matte', hex: '#1E2735', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Charcoal-Hero_1000x.jpg' },
-      { name: 'Mint Jade', hex: '#597D71', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Pool-Hero_1000x.jpg' },
-      { name: 'Soft Lavender', hex: '#C3B1E1', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Wisteria-Hero_1000x.jpg' }
+      { name: 'Rose Quartz', hex: '#E8C5C8', image: quencherProTourImg },
+      { name: 'Eucalyptus', hex: '#8FA396', image: quencherProTourImg },
+      { name: 'Cream', hex: '#F5F2EB', image: quencherProTourImg },
+      { name: 'Midnight Matte', hex: '#1E2735', image: quencherProTourImg },
+      { name: 'Mint Jade', hex: '#597D71', image: quencherProTourImg },
+      { name: 'Soft Lavender', hex: '#C3B1E1', image: quencherProTourImg }
     ]
   },
   {
@@ -186,17 +203,17 @@ export const PRODUCTS: Product[] = [
     priceFormatted: 'IDR 800.000',
     priceAmount: 800000,
     currency: 'IDR',
-    defaultImage: 'https://www.stanley1913.com/cdn/shop/files/30oz-IceFlow-Flip-Straw-Rose-Quartz-Hero_1000x.jpg',
+    defaultImage: iceFlowImg,
     gradientFrom: '#d7c8c4',
     gradientTo: '#ffecec',
     sizes: ['30 oz', '20 oz'],
     colors: [
       { name: 'Polar White', hex: '#EDF2F4', image: iceFlowImg },
-      { name: 'Rose Quartz', hex: '#E8C5C8', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Rose-Quartz-Hero_1000x.jpg' },
-      { name: 'Charcoal Black', hex: '#1C1C1C', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Black-Hero_1000x.jpg' },
-      { name: 'Sky Cyan', hex: '#73B2C6', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Pool-Hero_1000x.jpg' },
-      { name: 'Eucalyptus', hex: '#8FA396', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-FlowState-Eucalyptus-Hero_1000x.jpg' },
-      { name: 'Pomelo Coral', hex: '#F4856E', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Tigerlily-Hero_1000x.jpg' }
+      { name: 'Rose Quartz', hex: '#E8C5C8', image: iceFlowImg },
+      { name: 'Charcoal Black', hex: '#1C1C1C', image: iceFlowImg },
+      { name: 'Sky Cyan', hex: '#73B2C6', image: iceFlowImg },
+      { name: 'Eucalyptus', hex: '#8FA396', image: iceFlowImg },
+      { name: 'Pomelo Coral', hex: '#F4856E', image: iceFlowImg }
     ]
   },
   {
@@ -207,17 +224,17 @@ export const PRODUCTS: Product[] = [
     priceFormatted: 'IDR 750.000',
     priceAmount: 750000,
     currency: 'IDR',
-    defaultImage: 'https://www.stanley1913.com/cdn/shop/files/30oz-Flowstate-Rose-Quartz-Hero_1000x.jpg',
+    defaultImage: quencherH20Img,
     gradientFrom: '#496076',
     gradientTo: '#d6e1ea',
     sizes: ['30 oz'],
     colors: [
-      { name: 'Rose Quartz', hex: '#E8C5C8', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Rose-Quartz-Hero_1000x.jpg' },
-      { name: 'Cream', hex: '#F5F2EB', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-FlowState-Cream-Hero_1000x.jpg' },
-      { name: 'Fog Gray', hex: '#8C9BA5', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Fog-Hero_1000x.jpg' },
-      { name: 'Matte Charcoal', hex: '#363839', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Charcoal-Hero_1000x.jpg' },
-      { name: 'Eucalyptus', hex: '#8FA396', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-FlowState-Eucalyptus-Hero_1000x.jpg' },
-      { name: 'Pool Cyan', hex: '#73B2C6', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Pool-Hero_1000x.jpg' }
+      { name: 'Rose Quartz', hex: '#E8C5C8', image: quencherH20Img },
+      { name: 'Cream', hex: '#F5F2EB', image: quencherH20Img },
+      { name: 'Fog Gray', hex: '#8C9BA5', image: quencherH20Img },
+      { name: 'Matte Charcoal', hex: '#363839', image: quencherH20Img },
+      { name: 'Eucalyptus', hex: '#8FA396', image: quencherH20Img },
+      { name: 'Pool Cyan', hex: '#73B2C6', image: quencherH20Img }
     ]
   },
   {
@@ -234,10 +251,10 @@ export const PRODUCTS: Product[] = [
     sizes: ['12 oz'],
     colors: [
       { name: 'Hammertone Green', hex: '#3E5844', image: campMugImg },
-      { name: 'Matte Black', hex: '#1A1A1A', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Black-Hero_1000x.jpg' },
-      { name: 'Polar White', hex: '#EDF2F4', image: iceFlowImg },
-      { name: 'Nightfall Navy', hex: '#1E2735', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Charcoal-Hero_1000x.jpg' },
-      { name: 'Wine Plum', hex: '#542D3F', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Iris-Hero_1000x.jpg' }
+      { name: 'Matte Black', hex: '#1A1A1A', image: campMugImg },
+      { name: 'Polar White', hex: '#EDF2F4', image: campMugImg },
+      { name: 'Nightfall Navy', hex: '#1E2735', image: campMugImg },
+      { name: 'Wine Plum', hex: '#542D3F', image: campMugImg }
     ]
   },
   {
@@ -254,8 +271,8 @@ export const PRODUCTS: Product[] = [
     sizes: ['16 oz'],
     colors: [
       { name: 'Warm Terracotta', hex: '#794c3a', image: cafeTumblerImg },
-      { name: 'Obsidian Black', hex: '#181818', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-Flowstate-Black-Hero_1000x.jpg' },
-      { name: 'Cream', hex: '#F5F2EB', image: 'https://www.stanley1913.com/cdn/shop/files/40oz-FlowState-Cream-Hero_1000x.jpg' }
+      { name: 'Obsidian Black', hex: '#181818', image: cafeTumblerImg },
+      { name: 'Cream', hex: '#F5F2EB', image: cafeTumblerImg }
     ]
   }
 ]

@@ -18,7 +18,7 @@ const handleSubscribe = () => {
 
 <template>
   <footer class="w-full bg-[#161616] text-white pt-16 pb-12 border-t border-neutral-800 select-none">
-    <div class="max-w-[1512px] mx-auto px-4 sm:px-10">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-[24px]">
       <!-- Top Grid: Brand, Newsletter, Navigation Links -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-neutral-800">
         <!-- Col 1: Brand Wordmark & Story -->

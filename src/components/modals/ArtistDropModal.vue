@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import iceflowImg from '@/assets/images/artist-drop-iceflow.png'
-import { topGraphics } from '@/data/graphics'
+import barbiePinkTumblerImg from '@/assets/images/barbie-quencher-pink-clean.png'
+import { topGraphics, graphicCampaigns, type GraphicItem } from '@/data/graphics'
+import LaserPreview from '@/components/customizer/LaserPreview.vue'
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean
+  campaignId?: string
 }>()
 
 const emit = defineEmits<{
@@ -12,8 +15,42 @@ const emit = defineEmits<{
   (e: 'start-engrave', graphicId?: string): void
 }>()
 
-const graphics = topGraphics
-const selectedGraphicId = ref<string>(topGraphics[0]?.id || 'stanley-bear-crest')
+const activeCampaign = computed(() => {
+  if (props.campaignId) {
+    return graphicCampaigns.find(c => c.id === props.campaignId) || null
+  }
+  return null
+})
+
+const graphics = computed<GraphicItem[]>(() => {
+  return activeCampaign.value?.graphics || topGraphics
+})
+
+const modalTitle = computed(() => {
+  return activeCampaign.value ? activeCampaign.value.title : 'Get Inspired by Artist Designs Drop'
+})
+
+const modalSubtitle = computed(() => {
+  return activeCampaign.value ? activeCampaign.value.description : 'Explore unique creations from talented artists and see how different styles come to life.'
+})
+
+const sectionTitle = computed(() => {
+  return activeCampaign.value ? activeCampaign.value.subtitle : 'Top 5 Most Used Graphics'
+})
+
+const selectedGraphicId = ref<string>(graphics.value[0]?.id || 'stanley-bear-crest')
+
+watch(() => props.campaignId, () => {
+  if (graphics.value.length > 0) {
+    selectedGraphicId.value = graphics.value[0].id
+  }
+}, { immediate: true })
+
+watch(() => props.isOpen, (newVal) => {
+  if (newVal && graphics.value.length > 0) {
+    selectedGraphicId.value = graphics.value[0].id
+  }
+})
 
 const selectGraphic = (id: string) => {
   selectedGraphicId.value = id
@@ -22,6 +59,11 @@ const selectGraphic = (id: string) => {
 const handleEngraveNow = () => {
   emit('start-engrave', selectedGraphicId.value)
   emit('close')
+}
+
+const getActiveGraphicImage = () => {
+  const g = graphics.value.find(item => item.id === selectedGraphicId.value)
+  return g ? g.img : graphics.value[0]?.img
 }
 </script>
 
@@ -36,13 +78,23 @@ const handleEngraveNow = () => {
       <div
         class="bg-white rounded-[16px] w-full max-w-[1200px] h-full max-h-[850px] lg:w-[1200px] lg:h-[600px] overflow-hidden relative shadow-2xl flex flex-col lg:flex-row border border-neutral-100 animate-scale-up"
       >
-        <!-- Background Hero Visual (Figma Node 5255:4765 - IceFlow copy 1) -->
+        <!-- Background Hero Visual (Tumbler with Live Laser Engraved Preview - Figma Node 5076:4983) -->
         <div class="absolute inset-0 pointer-events-none hidden lg:block overflow-hidden">
           <img
-            :src="iceflowImg"
-            alt="Stanley IceFlow Tumbler"
-            class="absolute right-[-140px] top-[-110px] w-[820px] h-[1080px] object-contain object-top pointer-events-none"
+            :src="barbiePinkTumblerImg"
+            alt="Stanley Tumbler"
+            class="absolute left-[690px] top-[25px] w-[600px] h-[1100px] object-contain object-top pointer-events-none"
           />
+          <!-- Laser Etched Vector Artwork Overlay on Tumbler (Figma Node 5255:5338 - Metallic Laser Finish) -->
+          <div class="absolute left-[790px] top-[215px] w-[215px] h-[215px] flex items-center justify-center pointer-events-none">
+            <LaserPreview
+              type="image"
+              :image-src="getActiveGraphicImage()"
+              :is-light-tumbler="true"
+              depth-level="standard"
+              class="w-[185px] h-[185px]"
+            />
+          </div>
         </div>
 
         <!-- Global Close Button (Figma Node 5074:8153 - 40x40 #E9E6E6 circle with 1.2px vector X) -->
@@ -71,10 +123,10 @@ const handleEngraveNow = () => {
             <!-- Header Container (Figma Node 5076:6402 - 560px width) -->
             <div class="flex flex-col gap-[12px] max-w-[576px]">
               <h1 class="font-['Stanley_Favorit',sans-serif] font-medium text-2xl sm:text-3xl lg:text-[32px] text-black tracking-[-0.96px] leading-tight">
-                Get Inspired by Artist Designs Drop
+                {{ modalTitle }}
               </h1>
               <p class="font-['Stanley_Favorit',sans-serif] font-normal text-[15px] sm:text-[16px] text-black leading-[1.5]">
-                Explore unique creations from talented artists and see how different styles come to life.
+                {{ modalSubtitle }}
               </p>
             </div>
 
@@ -82,7 +134,7 @@ const handleEngraveNow = () => {
             <div class="flex flex-col gap-[14px] w-full max-w-[576px]">
               <!-- Categories Title (Figma Node 5255:5165) -->
               <h2 class="font-['Stanley_Favorit',sans-serif] font-medium text-[16px] text-black tracking-[-0.48px] leading-normal">
-                Top 5 Most Used Graphics
+                {{ sectionTitle }}
               </h2>
 
               <!-- Categories Row (Figma Node 5255:5166 - 138px x 184px cards) -->

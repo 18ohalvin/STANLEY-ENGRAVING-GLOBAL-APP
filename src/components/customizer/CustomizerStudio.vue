@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
-import { X, Sparkles, Snowflake, Box, Check, ArrowRight, ArrowLeft, LayoutGrid, Upload, Type, ChevronLeft, ChevronRight, Plus } from 'lucide-vue-next'
+import { X, Sparkles, Snowflake, Box, Check, ArrowRight, ArrowLeft, LayoutGrid, Upload, UploadCloud, Type, ChevronLeft, ChevronRight, Plus } from 'lucide-vue-next'
 import type { Product, ProductColor } from '@/data/catalog'
 import { getEngravingProfile } from '@/data/catalog'
 import stanleyLogo from '@/assets/images/stanley-logo.png'
@@ -23,6 +23,7 @@ const emit = defineEmits<{
 
 // Stepper state (1: Your Base, 2: Personalize, 3: Review)
 const currentStep = ref<1 | 2 | 3>(1)
+const maxStepReached = ref<number>(props.initialArtwork ? 2 : 1)
 
 // Selection State
 const selectedColor = ref<ProductColor>(props.initialColor || props.product.colors[0])
@@ -46,9 +47,16 @@ const selectedPlacement = ref<'center' | 'top' | 'bottom' | 'left' | 'right' | n
 const textOrientation = ref<'vertical' | 'horizontal'>('horizontal')
 const stackOrder = ref<'graphic-top' | 'text-top'>('graphic-top')
 const uploadedFileName = ref<string | null>(null)
+const firstCustomizationType = ref<'text' | 'graphic' | null>(null)
 const isAdded = ref(false)
 const showDiscardModal = ref(false)
+const showCloseConfirmModal = ref(false)
 const textInputRef = ref<HTMLInputElement | null>(null)
+
+const confirmStudioExit = () => {
+  showCloseConfirmModal.value = false
+  emit('close')
+}
 
 // Snapshot of applied personalization state (used for revert on discard)
 const appliedState = ref({
@@ -62,6 +70,26 @@ const appliedState = ref({
   orientation: 'horizontal' as 'vertical' | 'horizontal',
   stackOrder: 'graphic-top' as 'graphic-top' | 'text-top',
   uploadedFile: null as string | null
+})
+
+watch(() => props.initialArtwork, (newArt) => {
+  if (newArt) {
+    selectedArtwork.value = newArt
+    appliedState.value.artwork = newArt
+    maxStepReached.value = 2
+  }
+})
+
+watch(() => props.isOpen, (open) => {
+  if (open) {
+    currentStep.value = 1
+    maxStepReached.value = props.initialArtwork ? 2 : 1
+    selectedSubCategory.value = null
+    if (props.initialArtwork) {
+      selectedArtwork.value = props.initialArtwork
+      appliedState.value.artwork = props.initialArtwork
+    }
+  }
 })
 
 const isLightColor = (hex?: string): boolean => {
@@ -81,103 +109,22 @@ const isProductColorLight = computed(() => {
 const productProfile = computed(() => getEngravingProfile(props.product))
 
 const textMeasureBoxRef = ref<HTMLElement | null>(null)
+const isTextLimitReached = ref(false)
 
 const getAvailableTextHeight = () => {
   const totalZoneHeight = 280
-  const hasGraphic = Boolean(selectedArtwork.value || uploadedFileName.value)
+  const hasGraphic = Boolean(selectedArtwork.value || uploadedFileName.value || appliedState.value.artwork)
   if (!hasGraphic) return totalZoneHeight
   
-  const placement = selectedGraphicPlacement.value || 'center'
-  const gSize = selectedGraphicSize.value || 'M'
-  const gHeight = gSize === 'L' ? 150 : gSize === 'S' ? 70 : 100
-
-  if (placement === 'top' || placement === 'bottom') {
-    return Math.max(30, totalZoneHeight - gHeight - 8)
+  const gPlacement = selectedGraphicPlacement.value || appliedState.value.graphicPlacement || 'center'
+  const gSize = selectedGraphicSize.value || appliedState.value.graphicSize || 'M'
+  const gHeight = gSize === 'L' ? (productProfile.value?.largeGraphicHeight || 182) : gSize === 'S' ? (productProfile.value?.smallGraphicHeight || 100) : (productProfile.value?.standardGraphicHeight || 135)
+  
+  if (gPlacement === 'center') {
+    return Math.max(35, Math.floor((totalZoneHeight - gHeight) / 2))
   }
-  // center placement
-  return Math.max(30, Math.floor((totalZoneHeight - gHeight) / 2) - 8)
+  return Math.max(40, totalZoneHeight - gHeight)
 }
-
-const checkTextFits = (testText: string): boolean => {
-  if (!testText) return true
-  const el = textMeasureBoxRef.value
-  if (!el) return true
-  
-  const maxH = getAvailableTextHeight()
-  const maxW = 190
-  
-  if (textOrientation.value === 'vertical') {
-    el.style.maxWidth = `${maxH}px`
-    el.style.width = 'auto'
-    el.style.maxHeight = `${maxW}px`
-    el.style.height = 'auto'
-    el.textContent = testText
-    const scrollW = el.scrollWidth
-    const scrollH = el.scrollHeight
-    return scrollW <= maxH + 4 && scrollH <= maxW + 5
-  } else {
-    el.style.maxHeight = `${maxH}px`
-    el.style.height = 'auto'
-    el.style.maxWidth = `${maxW}px`
-    el.style.width = `${maxW}px`
-  }
-  
-  el.textContent = testText
-  
-  const scrollH = el.scrollHeight
-  const scrollW = el.scrollWidth
-  
-  return scrollH <= maxH + 4 && scrollW <= maxW + 5
-}
-
-const fitTextToAvailableSpace = (text: string): string => {
-  if (!text) return ''
-  if (checkTextFits(text)) return text
-  
-  let low = 0
-  let high = text.length
-  let best = ''
-  
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2)
-    const candidate = text.slice(0, mid)
-    if (checkTextFits(candidate)) {
-      best = candidate
-      low = mid + 1
-    } else {
-      high = mid - 1
-    }
-  }
-  return best
-}
-
-const formattedVerticalLines = computed(() => {
-  if (!engravingText.value) return []
-  return engravingText.value.split('\n')
-})
-
-const handleTextInput = (e: Event) => {
-  const target = e.target as HTMLTextAreaElement | HTMLInputElement
-  if (!target) return
-  const candidate = target.value
-  const fitted = fitTextToAvailableSpace(candidate)
-  rawEngravingText.value = candidate
-  engravingText.value = fitted
-  if (target.value !== fitted) {
-    target.value = fitted
-  }
-}
-
-watch([selectedFontSize, selectedFont, textOrientation, selectedGraphicSize, selectedGraphicPlacement, selectedArtwork], () => {
-  if (engravingText.value) {
-    const fitted = fitTextToAvailableSpace(engravingText.value)
-    if (fitted !== engravingText.value) {
-      engravingText.value = fitted
-    }
-  }
-})
-
-const fontSizeOptions: ('S' | 'M' | 'L' | 'XL')[] = ['S', 'M', 'L', 'XL']
 
 const fontOptions = [
   { name: 'Stanley Favorite', line1: 'Stanley', line2: 'Favorite', class: "font-['Stanley_Favorit',sans-serif] font-medium", caseMode: 'universal' as const },
@@ -188,30 +135,302 @@ const fontOptions = [
   { name: 'Cinzel', singleLine: 'Cinzel', class: "font-['Cinzel',serif]", caseMode: 'uppercase' as const },
   { name: 'Playfair Display', line1: 'Playfair', line2: 'Display', class: "font-['Playfair_Display',serif]", caseMode: 'universal' as const },
   { name: 'Bebas Neue', singleLine: 'BEBAS NEUE', class: "font-['Bebas_Neue',sans-serif] tracking-wider", caseMode: 'uppercase' as const },
+  { name: 'Great Vibes', line1: 'Great', line2: 'Vibes', class: "font-['Great_Vibes',cursive]", caseMode: 'universal' as const },
+  { name: 'Pacifico', singleLine: 'Pacifico', class: "font-['Pacifico',cursive]", caseMode: 'universal' as const },
+  { name: 'Permanent Marker', line1: 'Permanent', line2: 'Marker', class: "font-['Permanent_Marker',cursive]", caseMode: 'universal' as const },
+  { name: 'Righteous', singleLine: 'Righteous', class: "font-['Righteous',sans-serif]", caseMode: 'universal' as const },
+  { name: 'Montserrat', singleLine: 'Montserrat', class: "font-['Montserrat',sans-serif] font-bold", caseMode: 'universal' as const },
+  { name: 'Oswald', singleLine: 'OSWALD', class: "font-['Oswald',sans-serif] font-semibold tracking-wide", caseMode: 'uppercase' as const },
+  { name: 'Abril Fatface', line1: 'Abril', line2: 'Fatface', class: "font-['Abril_Fatface',serif]", caseMode: 'universal' as const },
+  { name: 'Alfa Slab One', line1: 'Alfa Slab', line2: 'One', class: "font-['Alfa_Slab_One',serif]", caseMode: 'universal' as const },
 ]
 
-const getFontClass = (fontName: string | null) => {
+const getFontClass = (fontName: string | null | undefined): string => {
   if (!fontName) return "font-['Stanley_Favorit',sans-serif] font-medium"
   const f = fontOptions.find(opt => opt.name === fontName || opt.class === fontName)
-  return f ? f.class : "font-['Stanley_Favorit',sans-serif] font-medium"
+  return f ? f.class : (fontName.startsWith('font-') ? fontName : "font-['Stanley_Favorit',sans-serif] font-medium")
 }
 
 const isFontUppercase = (fontNameOrClass: string | null | undefined): boolean => {
   if (!fontNameOrClass) return false
   const font = fontOptions.find(f => f.name === fontNameOrClass || f.class === fontNameOrClass)
-  return font?.caseMode === 'uppercase'
+  if (font) return font.caseMode === 'uppercase'
+  return fontNameOrClass.includes('uppercase') || fontNameOrClass.includes('Cinzel') || fontNameOrClass.includes('Bebas') || fontNameOrClass.includes('Oswald')
 }
+
+const getFontFamilyString = (fontNameOrClass: string | null | undefined): string => {
+  const str = fontNameOrClass || ''
+  if (str.includes('Dancing_Script') || str.includes('Dancing Script') || str.includes('Dancing')) return "'Dancing Script', 'Dancing_Script', cursive"
+  if (str.includes('Space_Mono') || str.includes('Space Mono') || str.includes('Space')) return "'Space Mono', 'Space_Mono', monospace"
+  if (str.includes('Gasoek_One') || str.includes('Gasoek One') || str.includes('Gasoek')) return "'Gasoek One', 'Gasoek_One', sans-serif"
+  if (str.includes('Caveat')) return "'Caveat', cursive"
+  if (str.includes('Cinzel')) return "'Cinzel', serif"
+  if (str.includes('Playfair_Display') || str.includes('Playfair Display') || str.includes('Playfair')) return "'Playfair Display', 'Playfair_Display', serif"
+  if (str.includes('Bebas_Neue') || str.includes('Bebas Neue') || str.includes('Bebas')) return "'Bebas Neue', 'Bebas_Neue', sans-serif"
+  if (str.includes('Great_Vibes') || str.includes('Great Vibes') || str.includes('Great')) return "'Great Vibes', 'Great_Vibes', cursive"
+  if (str.includes('Pacifico')) return "'Pacifico', cursive"
+  if (str.includes('Permanent_Marker') || str.includes('Permanent Marker') || str.includes('Permanent')) return "'Permanent Marker', 'Permanent_Marker', cursive"
+  if (str.includes('Righteous')) return "'Righteous', sans-serif"
+  if (str.includes('Montserrat')) return "'Montserrat', sans-serif"
+  if (str.includes('Oswald')) return "'Oswald', sans-serif"
+  if (str.includes('Abril_Fatface') || str.includes('Abril Fatface') || str.includes('Abril')) return "'Abril Fatface', 'Abril_Fatface', serif"
+  if (str.includes('Alfa_Slab_One') || str.includes('Alfa Slab One') || str.includes('Alfa Slab') || str.includes('Alfa')) return "'Alfa Slab One', 'Alfa_Slab_One', serif"
+  if (str.includes('serif')) return 'Georgia, Cambria, serif'
+  if (str.includes('mono')) return 'Menlo, Monaco, Consolas, monospace'
+  return "'Stanley_Favorit', sans-serif"
+}
+
+// Characteristic width ratio per font family (ratio of average character width to fontPx)
+const getFontCharWidthRatio = (fontNameOrClass: string | null | undefined, isUpper: boolean): number => {
+  const str = fontNameOrClass || ''
+  if (str.includes('Bebas')) return 0.38
+  if (str.includes('Oswald')) return 0.39
+  if (str.includes('Space')) return 0.60
+  if (str.includes('Caveat')) return isUpper ? 0.44 : 0.39
+  if (str.includes('Dancing')) return isUpper ? 0.48 : 0.41
+  if (str.includes('Great')) return isUpper ? 0.50 : 0.42
+  if (str.includes('Pacifico')) return isUpper ? 0.52 : 0.46
+  if (str.includes('Permanent')) return isUpper ? 0.55 : 0.48
+  if (str.includes('Righteous')) return 0.52
+  if (str.includes('Montserrat')) return isUpper ? 0.58 : 0.50
+  if (str.includes('Abril')) return isUpper ? 0.60 : 0.50
+  if (str.includes('Alfa')) return isUpper ? 0.62 : 0.54
+  if (str.includes('Cinzel')) return 0.54
+  if (str.includes('Gasoek')) return 0.55
+  if (str.includes('Playfair')) return isUpper ? 0.56 : 0.47
+  return isUpper ? 0.55 : 0.49
+}
+
+let measureCanvas: HTMLCanvasElement | null = null
+let measureCtx: CanvasRenderingContext2D | null = null
+
+const getCanvasContext = () => {
+  if (typeof document === 'undefined') return null
+  if (!measureCanvas) {
+    measureCanvas = document.createElement('canvas')
+    measureCtx = measureCanvas.getContext('2d')
+  }
+  return measureCtx
+}
+
+const measureTextWidth = (
+  text: string,
+  fontNameOrClass: string | null | undefined,
+  fontPx: number,
+  isVertical: boolean
+): number => {
+  if (!text) return 0
+  const isUpper = isFontUppercase(fontNameOrClass)
+  const transformed = isUpper ? text.toUpperCase() : text
+  const family = getFontFamilyString(fontNameOrClass)
+  
+  const ctx = getCanvasContext()
+  let measured = 0
+  if (ctx) {
+    ctx.font = `bold ${fontPx}px ${family}`
+    measured = ctx.measureText(transformed).width
+  }
+  
+  const ratio = getFontCharWidthRatio(fontNameOrClass, isUpper)
+  const estimatedFallback = transformed.length * (fontPx * ratio)
+  
+  // Use canvas measurement if valid and reasonable, otherwise fallback
+  const width = (measured > 0 && measured < estimatedFallback * 2.5 && measured > estimatedFallback * 0.4)
+    ? measured
+    : estimatedFallback
+    
+  // Add letter-spacing (matching LaserPreview parsedLetterSpacing)
+  const isBebas = (fontNameOrClass || '').includes('Bebas')
+  const letterSpacingEm = isBebas ? 0.08 : (isVertical ? 0.08 : 0.02)
+  const spacingTotal = Math.max(0, transformed.length - 1) * (fontPx * letterSpacingEm)
+  
+  return width + spacingTotal
+}
+
+const getFontSizePx = (): number => {
+  const hasGraphic = Boolean(selectedArtwork.value || uploadedFileName.value || appliedState.value.artwork)
+  const gSize = selectedGraphicSize.value || appliedState.value.graphicSize || 'M'
+  const fontSize = selectedFontSize.value
+  
+  if (gSize === 'L' && hasGraphic) {
+    return fontSize === 'S' ? 22 : fontSize === 'M' ? 26 : fontSize === 'L' ? 31 : 41
+  } else {
+    return fontSize === 'S' ? 24 : fontSize === 'M' ? 34 : fontSize === 'L' ? 43 : 55
+  }
+}
+
+const checkSingleLineFits = (lineText: string, currentFont?: string | null): boolean => {
+  if (!lineText) return true
+  
+  const activeFont = currentFont !== undefined ? currentFont : selectedFont.value
+  const fontPx = getFontSizePx()
+  const availableHeight = getAvailableTextHeight()
+  const availableWidth = 180
+  const isVertical = textOrientation.value === 'vertical'
+  
+  const measuredWidth = measureTextWidth(lineText, activeFont, fontPx, isVertical)
+  
+  if (isVertical) {
+    return measuredWidth <= availableHeight
+  } else {
+    return measuredWidth <= availableWidth
+  }
+}
+
+const getMaxAllowedLines = (): number => {
+  const isVertical = textOrientation.value === 'vertical'
+  const fontPx = getFontSizePx()
+  
+  if (isVertical) {
+    // Vertical text columns expand horizontally across the engraving width (~180px)
+    const availableWidth = 180
+    const colWidth = Math.max(18, fontPx * 1.0)
+    return Math.max(1, Math.floor(availableWidth / colWidth))
+  } else {
+    // Horizontal text lines stack vertically in the available text height (280px full zone)
+    const availableHeight = getAvailableTextHeight()
+    const lineHeight = Math.max(18, fontPx * 0.94)
+    return Math.max(1, Math.floor(availableHeight / lineHeight))
+  }
+}
+
+const splitIntoFittingLines = (rawLine: string, currentFont?: string | null): string[] => {
+  const activeFont = currentFont !== undefined ? currentFont : selectedFont.value
+  if (checkSingleLineFits(rawLine, activeFont)) return [rawLine]
+  
+  const result: string[] = []
+  let remaining = rawLine
+  
+  while (remaining.length > 0) {
+    if (checkSingleLineFits(remaining, activeFont)) {
+      result.push(remaining)
+      break
+    }
+    
+    // Binary search for largest slice of `remaining` that fits on one line
+    let low = 1
+    let high = remaining.length
+    let maxFittingLen = 1
+    
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2)
+      if (checkSingleLineFits(remaining.slice(0, mid), activeFont)) {
+        maxFittingLen = mid
+        low = mid + 1
+      } else {
+        high = mid - 1
+      }
+    }
+    
+    // Check if there is a space within remaining[0 ... maxFittingLen]
+    const slice = remaining.slice(0, maxFittingLen)
+    const lastSpaceIdx = slice.lastIndexOf(' ')
+    if (lastSpaceIdx > 0) {
+      result.push(remaining.slice(0, lastSpaceIdx))
+      remaining = remaining.slice(lastSpaceIdx + 1).trimStart()
+    } else {
+      // Hard break characters so word wraps into next line (e.g. STAN -> LEY)
+      const breakIdx = Math.max(1, maxFittingLen)
+      result.push(remaining.slice(0, breakIdx))
+      remaining = remaining.slice(breakIdx).trimStart()
+    }
+  }
+  
+  return result
+}
+
+const getWrappedLines = (text: string, currentFont?: string | null): string[] => {
+  if (!text) return []
+  const activeFont = currentFont !== undefined ? currentFont : selectedFont.value
+  const rawParagraphs = text.split('\n')
+  const wrappedLines: string[] = []
+  
+  for (const p of rawParagraphs) {
+    if (p === '') {
+      wrappedLines.push('')
+    } else {
+      wrappedLines.push(...splitIntoFittingLines(p, activeFont))
+    }
+  }
+  return wrappedLines
+}
+
+const fitRawTextToCapacity = (rawText: string, currentFont?: string | null): { fittedText: string; isLimitReached: boolean } => {
+  if (!rawText) {
+    return { fittedText: '', isLimitReached: false }
+  }
+  
+  const activeFont = currentFont !== undefined ? currentFont : selectedFont.value
+  const maxLines = getMaxAllowedLines()
+  const wrapped = getWrappedLines(rawText, activeFont)
+  
+  if (wrapped.length <= maxLines) {
+    return { fittedText: rawText, isLimitReached: false }
+  }
+  
+  // Truncate rawText character-by-character from the end until it fits within maxLines on the tumbler
+  let low = 0
+  let high = rawText.length
+  let bestFit = ''
+  
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2)
+    const candidate = rawText.slice(0, mid)
+    if (getWrappedLines(candidate, activeFont).length <= maxLines) {
+      bestFit = candidate
+      low = mid + 1
+    } else {
+      high = mid - 1
+    }
+  }
+  
+  return {
+    fittedText: bestFit,
+    isLimitReached: true
+  }
+}
+
+const previewEngravingText = computed(() => {
+  const font = selectedFont.value
+  const text = engravingText.value
+  if (!text) return ''
+  const wrapped = getWrappedLines(text, font)
+  const maxLines = getMaxAllowedLines()
+  return wrapped.slice(0, maxLines).join('\n')
+})
+
+const formattedVerticalLines = computed(() => {
+  if (!previewEngravingText.value) return []
+  return previewEngravingText.value.split('\n')
+})
+
+const handleTextInput = (e: Event) => {
+  const target = e.target as HTMLTextAreaElement | HTMLInputElement
+  if (!target) return
+  const candidate = target.value
+  rawEngravingText.value = candidate
+  const { fittedText, isLimitReached } = fitRawTextToCapacity(candidate, selectedFont.value)
+  engravingText.value = fittedText
+  isTextLimitReached.value = isLimitReached
+  if (target.value !== fittedText) {
+    target.value = fittedText
+  }
+}
+
+watch([selectedFontSize, selectedFont, textOrientation, selectedGraphicSize, selectedGraphicPlacement, selectedArtwork], () => {
+  const baseText = rawEngravingText.value || engravingText.value
+  if (baseText) {
+    const { fittedText, isLimitReached } = fitRawTextToCapacity(baseText, selectedFont.value)
+    engravingText.value = fittedText
+    isTextLimitReached.value = isLimitReached
+  }
+})
+
+const fontSizeOptions: ('S' | 'M' | 'L' | 'XL')[] = ['S', 'M', 'L', 'XL']
 
 const setOrientation = (val: 'horizontal' | 'vertical') => {
   if (textOrientation.value === val) return
   textOrientation.value = val
-  if (val === 'vertical') {
-    selectedPlacement.value = 'center'
-  } else {
-    if (!selectedPlacement.value || selectedPlacement.value === 'left' || selectedPlacement.value === 'right') {
-      selectedPlacement.value = 'center'
-    }
-  }
 }
 
 // Floating Apply Button Scroll & Visibility State
@@ -247,16 +466,36 @@ const handleDrawerScroll = (e: Event) => {
 // Check if current draft differs from applied state snapshot
 const hasUnsavedEdits = computed(() => {
   if (selectedSubCategory.value === 'text') {
-    return (
-      engravingText.value !== appliedState.value.text ||
-      selectedFont.value !== appliedState.value.font ||
-      selectedFontSize.value !== appliedState.value.fontSize ||
-      selectedPlacement.value !== appliedState.value.placement ||
-      textOrientation.value !== appliedState.value.orientation
-    )
+    const currentText = (engravingText.value || '').trim()
+    const appliedText = (appliedState.value.text || '').trim()
+    if (currentText !== appliedText) return true
+    
+    const currentFont = selectedFont.value || fontOptions[0].name
+    const appliedFont = appliedState.value.font || fontOptions[0].name
+    if (currentFont !== appliedFont) return true
+
+    if (selectedFontSize.value !== (appliedState.value.fontSize || 'M')) return true
+    
+    const currentPlacement = selectedPlacement.value || 'center'
+    const appliedPlacement = appliedState.value.placement || 'center'
+    if (currentPlacement !== appliedPlacement) return true
+
+    const currentOrientation = textOrientation.value || 'horizontal'
+    const appliedOrientation = appliedState.value.orientation || 'horizontal'
+    if (currentOrientation !== appliedOrientation) return true
+
+    return false
   }
   if (selectedSubCategory.value === 'gallery') {
-    return selectedArtwork.value !== appliedState.value.artwork
+    const currentArt = selectedArtwork.value || null
+    const appliedArt = appliedState.value.artwork || null
+    if (currentArt !== appliedArt) return true
+    if (selectedGraphicSize.value !== (appliedState.value.graphicSize || 'M')) return true
+    if (selectedGraphicPlacement.value !== (appliedState.value.graphicPlacement || 'center')) return true
+    return false
+  }
+  if (selectedSubCategory.value === 'upload') {
+    return uploadedFileName.value !== appliedState.value.uploadedFile
   }
   return false
 })
@@ -326,35 +565,176 @@ const openTextPersonalization = () => {
     const gPlacement = selectedGraphicPlacement.value || appliedState.value.graphicPlacement || 'center'
     if (gPlacement === 'bottom' || gPlacement === 'right') {
       stackOrder.value = 'text-top'
-      appliedState.value.stackOrder = 'text-top'
     } else {
       stackOrder.value = 'graphic-top'
-      appliedState.value.stackOrder = 'graphic-top'
     }
   }
   selectedSubCategory.value = 'text'
 }
+
+const showSpaceModal = ref(false)
+const pendingArtwork = ref<string | null>(null)
+
+const canFitGraphicWithCurrentText = (targetGraphicSize?: 'S' | 'M' | 'L'): boolean => {
+  const text = engravingText.value || appliedState.value.text
+  if (!text) return true
+  
+  const gSize = targetGraphicSize || selectedGraphicSize.value || appliedState.value.graphicSize || 'M'
+  const totalZoneHeight = 280
+  const gHeight = gSize === 'L' ? (productProfile.value?.largeGraphicHeight || 182) : gSize === 'S' ? (productProfile.value?.smallGraphicHeight || 100) : (productProfile.value?.standardGraphicHeight || 135)
+  const availableHeightWithGraphic = Math.max(40, totalZoneHeight - gHeight)
+  
+  const fontSize = selectedFontSize.value
+  const fontPx = gSize === 'L'
+    ? (fontSize === 'S' ? 22 : fontSize === 'M' ? 26 : fontSize === 'L' ? 31 : 41)
+    : (fontSize === 'S' ? 24 : fontSize === 'M' ? 34 : fontSize === 'L' ? 43 : 55)
+    
+  if (textOrientation.value === 'vertical') {
+    const wrapped = getWrappedLines(text, selectedFont.value)
+    for (const col of wrapped) {
+      const colLen = measureTextWidth(col, selectedFont.value, fontPx, true)
+      if (colLen > availableHeightWithGraphic) {
+        return false
+      }
+    }
+    return true
+  } else {
+    const lineHeight = Math.max(18, fontPx * 0.94)
+    const maxLinesWithGraphic = Math.max(1, Math.floor(availableHeightWithGraphic / lineHeight))
+    const wrapped = getWrappedLines(text, selectedFont.value)
+    return wrapped.length <= maxLinesWithGraphic
+  }
+}
+
+const canFitGraphic = computed(() => canFitGraphicWithCurrentText())
+
+const handleSelectArtwork = (artId: string) => {
+  if (selectedArtwork.value === artId) {
+    selectedArtwork.value = null
+    return
+  }
+  
+  if (!canFitGraphicWithCurrentText()) {
+    pendingArtwork.value = artId
+    showSpaceModal.value = true
+    return
+  }
+  
+  selectedArtwork.value = artId
+}
+
+const openTextToAdjust = () => {
+  showSpaceModal.value = false
+  selectedSubCategory.value = 'text'
+}
+
+const openGraphicGallery = (specificArtId?: string) => {
+  // Preserve current text inputs
+  appliedState.value.text = engravingText.value
+  appliedState.value.font = selectedFont.value
+  appliedState.value.fontSize = selectedFontSize.value
+  appliedState.value.orientation = textOrientation.value
+  appliedState.value.placement = selectedPlacement.value
+
+  // Position graphic cleanly in the open slot without shifting text
+  if (selectedPlacement.value === 'top') {
+    selectedGraphicPlacement.value = 'bottom'
+    stackOrder.value = 'text-top'
+  } else if (selectedPlacement.value === 'bottom') {
+    selectedGraphicPlacement.value = 'top'
+    stackOrder.value = 'graphic-top'
+  }
+
+  const targetArtId = specificArtId || pendingArtwork.value || appliedState.value.artwork || selectedArtwork.value || props.initialArtwork
+  if (targetArtId) {
+    selectedArtwork.value = targetArtId
+    appliedState.value.artwork = targetArtId
+    pendingArtwork.value = null
+
+    // Check if graphic belongs to a campaign
+    const matchingCampaign = graphicCampaigns.find(c => c.graphics && c.graphics.some(g => g.id === targetArtId))
+    if (matchingCampaign) {
+      activeCampaign.value = matchingCampaign
+      activeCategory.value = null
+    } else {
+      let foundCategory: CategoryDetail | null = null
+      for (const catKey of Object.keys(categoryDetails)) {
+        if (categoryDetails[catKey].graphics && categoryDetails[catKey].graphics.some(g => g.id === targetArtId)) {
+          foundCategory = categoryDetails[catKey]
+          break
+        }
+      }
+      if (foundCategory) {
+        activeCategory.value = foundCategory
+        activeCampaign.value = null
+        const artIdx = foundCategory.graphics.findIndex(g => g.id === targetArtId)
+        if (artIdx >= 0) {
+          categoryPageIndex.value = Math.floor(artIdx / 6)
+        }
+      } else {
+        activeCategory.value = null
+        activeCampaign.value = null
+      }
+    }
+  }
+
+  selectedSubCategory.value = 'gallery'
+}
+
+const applyPendingArtworkAndCloseText = () => {
+  openGraphicGallery()
+}
+
+const isTextFullZone = computed(() => {
+  const text = (engravingText.value || appliedState.value.text || '').trim()
+  if (!text) return false
+  if (textOrientation.value === 'vertical') return true
+  const maxLines = getMaxAllowedLines()
+  const wrapped = getWrappedLines(text, selectedFont.value)
+  return wrapped.length >= Math.min(4, maxLines)
+})
+
+const handleSetGraphicPlacement = (pos: 'top' | 'center' | 'bottom') => {
+  selectedGraphicPlacement.value = pos
+  if (pos === 'top') {
+    stackOrder.value = 'graphic-top'
+  } else if (pos === 'bottom') {
+    stackOrder.value = 'text-top'
+  }
+}
+
+const hasTextPresent = computed(() => Boolean((engravingText.value || appliedState.value.text || '').trim()))
 
 const handleRemoveUpload = (e?: Event) => {
   if (e) e.stopPropagation()
   uploadedFileName.value = null
 }
 
-// Record snapshot when sidebar opens & auto-focus text field
-watch(selectedSubCategory, (newVal) => {
-  if (newVal) {
-    appliedState.value = {
-      text: engravingText.value,
-      font: selectedFont.value,
-      fontSize: selectedFontSize.value,
-      artwork: selectedArtwork.value,
-      placement: selectedPlacement.value,
-      orientation: textOrientation.value,
-      stackOrder: stackOrder.value,
+// When sidebar opens, populate draft fields from appliedState (NEVER overwrite appliedState on open!)
+watch(selectedSubCategory, (newVal, oldVal) => {
+  if (newVal && !oldVal) {
+    if (newVal === 'text') {
+      if (firstCustomizationType.value === null && !appliedState.value.artwork && !appliedState.value.uploadedFile && !selectedArtwork.value) {
+        firstCustomizationType.value = 'text'
+      }
+    } else if (newVal === 'gallery' || newVal === 'upload') {
+      if (firstCustomizationType.value === null && !appliedState.value.text.trim() && !engravingText.value.trim()) {
+        firstCustomizationType.value = 'graphic'
+      }
     }
+    rawEngravingText.value = appliedState.value.text || ''
+    engravingText.value = appliedState.value.text || ''
+    selectedFont.value = appliedState.value.font || fontOptions[0].name
+    selectedFontSize.value = appliedState.value.fontSize || 'M'
+    selectedGraphicSize.value = appliedState.value.graphicSize || 'M'
+    selectedArtwork.value = appliedState.value.artwork || null
+    selectedGraphicPlacement.value = appliedState.value.graphicPlacement || 'center'
+    selectedPlacement.value = appliedState.value.placement || 'center'
+    textOrientation.value = appliedState.value.orientation || 'horizontal'
+    stackOrder.value = appliedState.value.stackOrder || 'graphic-top'
+    uploadedFileName.value = appliedState.value.uploadedFile || null
   }
   if (newVal === 'text') {
-    rawEngravingText.value = appliedState.value.text || engravingText.value
     if (!selectedFont.value) {
       selectedFont.value = fontOptions[0].name
     }
@@ -451,12 +831,15 @@ const stopBannerAutoplay = () => {
 onMounted(() => {
   startBannerAutoplay()
   window.addEventListener('keydown', handleGlobalKeyDown)
+  window.addEventListener('resize', updateTumblerDimensions)
+  nextTick(updateTumblerDimensions)
 })
 
 onUnmounted(() => {
   stopBannerAutoplay()
   window.removeEventListener('popstate', handlePopState)
   window.removeEventListener('keydown', handleGlobalKeyDown)
+  window.removeEventListener('resize', updateTumblerDimensions)
 })
 
 const categoryPageIndex = ref(0)
@@ -489,7 +872,14 @@ const nextCategoryPage = () => {
   }
 }
 
-watch(activeCategory, () => {
+watch(activeCategory, (newCat) => {
+  if (newCat && selectedArtwork.value) {
+    const artIdx = newCat.graphics.findIndex(g => g.id === selectedArtwork.value)
+    if (artIdx >= 0) {
+      categoryPageIndex.value = Math.floor(artIdx / 6)
+      return
+    }
+  }
   categoryPageIndex.value = 0
 })
 
@@ -572,29 +962,46 @@ const dynamicGraphicStyle = computed(() => {
 })
 
 const graphicContainerStyle = computed(() => {
-  const placement = selectedGraphicPlacement.value || appliedState.value.graphicPlacement || 'center'
-  if (placement === 'top') return { position: 'absolute', top: '0px', left: '0px', right: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center' }
-  if (placement === 'bottom') return { position: 'absolute', bottom: '0px', left: '0px', right: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center' }
-  return { position: 'absolute', top: '50%', left: '0px', right: '0px', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+  const gPlacement = selectedGraphicPlacement.value || appliedState.value.graphicPlacement || 'center'
+  const gSize = selectedGraphicSize.value || appliedState.value.graphicSize || 'M'
+  const gHeight = gSize === 'L' ? (productProfile.value?.largeGraphicHeight || 182) : gSize === 'S' ? (productProfile.value?.smallGraphicHeight || 100) : (productProfile.value?.standardGraphicHeight || 135)
+
+  // The graphic placement is strictly fixed based on user input on graphic setting (0 inner padding)
+  if (gPlacement === 'top') {
+    return { position: 'absolute', top: '0px', left: '0px', right: '0px', height: `${gHeight}px`, display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }
+  }
+  if (gPlacement === 'bottom') {
+    return { position: 'absolute', bottom: '0px', left: '0px', right: '0px', height: `${gHeight}px`, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }
+  }
+  return { position: 'absolute', top: '50%', left: '0px', right: '0px', height: `${gHeight}px`, transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }
 })
 
 const textContainerStyle = computed(() => {
   const hasGraphic = Boolean(selectedArtwork.value || appliedState.value.artwork || uploadedFileName.value)
-  if (!hasGraphic) {
-    return { position: 'absolute', inset: '0px' }
-  }
-  const placement = selectedGraphicPlacement.value || appliedState.value.graphicPlacement || 'center'
+  const gPlacement = selectedGraphicPlacement.value || appliedState.value.graphicPlacement || 'center'
   const gSize = selectedGraphicSize.value || appliedState.value.graphicSize || 'M'
-  const gHeight = gSize === 'L' ? 150 : gSize === 'S' ? 70 : 100
-  
-  if (placement === 'top') return { position: 'absolute', left: '0px', right: '0px', bottom: '0px', top: `${gHeight + 4}px` }
-  if (placement === 'bottom') return { position: 'absolute', left: '0px', right: '0px', top: '0px', bottom: `${gHeight + 4}px` }
-  
-  // center
-  if (stackOrder.value === 'text-top') {
-    return { position: 'absolute', left: '0px', right: '0px', top: '0px', bottom: `calc(50% + ${gHeight / 2 + 4}px)` }
+  const gHeight = gSize === 'L' ? (productProfile.value?.largeGraphicHeight || 182) : gSize === 'S' ? (productProfile.value?.smallGraphicHeight || 100) : (productProfile.value?.standardGraphicHeight || 135)
+  const placement = selectedPlacement.value || appliedState.value.placement || 'center'
+
+  if (!hasGraphic) {
+    return { position: 'absolute', top: '0px', bottom: '0px', left: '0px', right: '0px' }
+  }
+
+  // Graphic at top: text fills remaining space below graphic (0 gap, 0 inner padding)
+  if (gPlacement === 'top') {
+    return { position: 'absolute', top: `${gHeight}px`, bottom: '0px', left: '0px', right: '0px' }
+  }
+
+  // Graphic at bottom: text fills remaining space above graphic (0 gap, 0 inner padding)
+  if (gPlacement === 'bottom') {
+    return { position: 'absolute', top: '0px', bottom: `${gHeight}px`, left: '0px', right: '0px' }
+  }
+
+  // Graphic at center:
+  if (placement === 'top') {
+    return { position: 'absolute', top: '0px', bottom: `calc(50% + ${Math.round(gHeight / 2)}px)`, left: '0px', right: '0px' }
   } else {
-    return { position: 'absolute', left: '0px', right: '0px', bottom: '0px', top: `calc(50% + ${gHeight / 2 + 4}px)` }
+    return { position: 'absolute', top: `calc(50% + ${Math.round(gHeight / 2)}px)`, bottom: '0px', left: '0px', right: '0px' }
   }
 })
 
@@ -644,8 +1051,50 @@ const activeBlankImage = computed(() => {
 })
 
 const isFocusedZoom = computed(() => {
-  return currentStep.value === 2 && selectedSubCategory.value !== null
+  return currentStep.value === 2
 })
+
+// Dynamic measurement for Step 3 proportional engraving scaling
+const tumblerImageRef = ref<HTMLImageElement | null>(null)
+const renderedTumblerHeight = ref(880)
+
+const updateTumblerDimensions = () => {
+  if (tumblerImageRef.value) {
+    const h = tumblerImageRef.value.clientHeight
+    if (h > 0) renderedTumblerHeight.value = h
+  }
+}
+
+const step2ReferenceHeight = computed(() => {
+  if (typeof window !== 'undefined') {
+    if (window.innerWidth >= 1024) return 880
+    if (window.innerWidth >= 640) return 850
+  }
+  return 620
+})
+
+const step3EngravingScale = computed(() => {
+  if (currentStep.value !== 3) return 1
+  const h = renderedTumblerHeight.value
+  const baseH = step2ReferenceHeight.value
+  if (!h || !baseH) return 0.76
+  return Math.min(1.0, Math.max(0.5, h / baseH))
+})
+
+watch(() => currentStep.value, (newStep) => {
+  nextTick(updateTumblerDimensions)
+  if (newStep === 2 && (selectedArtwork.value || appliedState.value.artwork || props.initialArtwork)) {
+    openGraphicGallery()
+  }
+})
+
+const goToStep2 = () => {
+  if (maxStepReached.value < 2) return
+  currentStep.value = 2
+  if (selectedArtwork.value || appliedState.value.artwork || props.initialArtwork) {
+    openGraphicGallery()
+  }
+}
 
 const isTextComplete = computed(() => {
   return engravingText.value.trim().length > 0
@@ -669,9 +1118,17 @@ const isPersonalizedState = computed(() => {
   return isFocusedZoom.value || hasPersonalization.value
 })
 
-const maxStepReached = ref<number>(1)
-
 const handleNextStep = () => {
+  if (currentStep.value === 1) {
+    currentStep.value = 2
+    if (currentStep.value > maxStepReached.value) {
+      maxStepReached.value = 2
+    }
+    if (selectedArtwork.value) {
+      openGraphicGallery()
+    }
+    return
+  }
   if (currentStep.value === 2 && !hasPersonalization.value) {
     return
   }
@@ -788,66 +1245,83 @@ watch(
       v-if="isOpen"
       class="fixed inset-0 z-50 bg-white flex flex-col overflow-y-auto lg:overflow-hidden select-none gpu-accelerated animate-fade-in"
     >
-      <!-- Studio Header (Figma Node 5120:1477 - Clean without border-b) -->
-      <header class="w-full bg-white px-6 sm:px-10 py-4 flex items-center justify-between z-20 flex-none max-w-[1512px] mx-auto">
-        <!-- Logo and Title (Node 5120:1478) -->
-        <div class="flex items-end gap-4 sm:gap-5">
-          <img
-            :src="stanleyLogo"
-            alt="Stanley 1913"
-            class="h-[28px] sm:h-[30px] w-auto object-contain opacity-90"
-          />
-          <span class="font-['Stanley_Favorit',sans-serif] font-bold text-[14px] text-black uppercase tracking-normal opacity-90 leading-none pb-[1px]">
-            DESIGN STUDIO
-          </span>
-        </div>
+      <!-- Studio Header (75% Opacity with Backdrop Blur Style matching Mobile - No Border Line) -->
+      <header class="absolute top-0 left-0 right-0 w-full bg-white/75 backdrop-blur-md z-30">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-[24px] py-4 flex items-center justify-between">
+          <!-- Logo and Title (Node 5120:1478) -->
+          <div class="flex items-end gap-4 sm:gap-5">
+            <img
+              :src="stanleyLogo"
+              alt="Stanley 1913"
+              class="h-[28px] sm:h-[30px] w-auto object-contain opacity-90"
+            />
+            <span class="font-['Stanley_Favorit',sans-serif] font-bold text-[14px] text-black uppercase tracking-normal opacity-90 leading-none pb-[1px]">
+              DESIGN STUDIO
+            </span>
+          </div>
 
-        <!-- Right Header Actions (Swap Products? & Close X) -->
-        <div class="flex items-center gap-6">
-          <button
-            @click="emit('swap-products')"
-            class="flex items-center gap-2 text-[14px] font-['Stanley_Favorit',sans-serif] font-normal text-black hover:opacity-75 transition-opacity cursor-pointer"
-          >
-            <span>Swap Products?</span>
-            <span class="text-[11px] border border-black/30 rounded px-1.5 py-0.5">⇄</span>
-          </button>
+          <!-- Right Header Actions (Swap Products? & Close X) -->
+          <div class="flex items-center gap-6">
+            <button
+              @click="emit('swap-products')"
+              class="flex items-center gap-2 text-[14px] font-['Stanley_Favorit',sans-serif] font-normal text-black hover:opacity-75 transition-opacity cursor-pointer"
+            >
+              <span>Swap Products?</span>
+              <span class="text-[11px] border border-black/30 rounded px-1.5 py-0.5">⇄</span>
+            </button>
 
-          <button
-            @click="emit('close')"
-            class="w-9 h-9 rounded-full hover:bg-neutral-100 flex items-center justify-center transition-colors cursor-pointer text-black"
-            aria-label="Close studio"
-          >
-            <X :size="20" />
-          </button>
+            <button
+              @click="showCloseConfirmModal = true"
+              class="w-9 h-9 rounded-full hover:bg-neutral-100 flex items-center justify-center transition-colors cursor-pointer text-black"
+              aria-label="Close studio"
+            >
+              <X :size="20" />
+            </button>
+          </div>
         </div>
       </header>
 
       <!-- Main Studio Workspace (2 Columns layout matching Figma Node 5087:8510) -->
-      <div class="flex-1 w-full max-w-[1512px] mx-auto flex flex-col lg:flex-row h-full overflow-hidden">
+      <div class="flex-1 w-full max-w-[1440px] mx-auto flex flex-col lg:flex-row h-full overflow-hidden relative">
         
         <!-- Left Column: Product Image Canvas Stage (Figma Node 5087:8541) -->
-        <div class="w-full lg:w-3/5 p-4 lg:p-8 flex flex-col items-center justify-center relative bg-white min-h-[500px] lg:min-h-full overflow-hidden">
-          <!-- Main Tumbler Product Image Render Stage (Lowered position & scaled up by 30% more) -->
+        <div class="w-full lg:w-3/5 p-4 lg:p-8 pt-6 flex flex-col items-center justify-center relative bg-white min-h-[500px] lg:min-h-full overflow-hidden">
+          <!-- Main Tumbler Product Image Render Stage (Step 1: Fit to portview with logo, Step 2: Scale up & center engraving zone without logo, Step 3: Fit to portview with implemented design) -->
           <div
-            class="relative w-full max-w-3xl h-[620px] sm:h-[840px] lg:h-[900px] flex items-center justify-center transition-transform duration-700 ease-out transform-gpu will-change-transform"
+            class="relative w-full max-w-3xl flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu will-change-transform"
             :class="[
-              isFocusedZoom ? 'scale-[1.15] sm:scale-[1.2] translate-y-2 sm:translate-y-4' : 'scale-100 translate-y-8 sm:translate-y-12'
+              currentStep === 2
+                ? 'h-[620px] sm:h-[840px] lg:h-[900px] scale-[1.22] sm:scale-[1.28] translate-y-3 sm:translate-y-5 lg:translate-y-6'
+                : 'h-full max-h-[calc(100vh-110px)] lg:max-h-[calc(100vh-120px)] scale-100 translate-y-0'
             ]"
           >
             <!-- Default Tumbler Image with Logo (Step 1) / Blank Image for Customization (Step 2 & 3) -->
             <img
+              ref="tumblerImageRef"
               :src="currentStep >= 2 ? activeBlankImage : activeImage"
               :alt="product.name"
-              class="max-h-[620px] sm:max-h-[850px] lg:max-h-[880px] w-auto object-contain filter drop-shadow-xl transition-opacity duration-700 ease-out transform-gpu opacity-100"
+              class="w-auto object-contain filter drop-shadow-xl transition-all duration-700 ease-out transform-gpu opacity-100 select-none pointer-events-none"
+              :class="[
+                currentStep === 2
+                  ? 'max-h-[620px] sm:max-h-[850px] lg:max-h-[880px]'
+                  : 'h-full max-h-[calc(100vh-140px)] sm:max-h-[calc(100vh-130px)] lg:max-h-[calc(100vh-120px)]'
+              ]"
+              @load="updateTumblerDimensions"
             />
 
             <!-- UNIFIED ENGRAVABLE AREA CANVAS BOX (Shared by Live Editing & Applied State) -->
             <div
               v-if="currentStep >= 2"
-              class="absolute z-20 w-[180px] sm:w-[200px] h-[264px] sm:h-[293px] rounded-[8px] transition-all top-[48%] -translate-y-1/2 overflow-hidden no-scrollbar p-0"
+              class="absolute z-20 w-[180px] sm:w-[200px] h-[264px] sm:h-[293px] rounded-[8px] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] top-[48%] overflow-hidden no-scrollbar p-0"
+              :style="{
+                transform: currentStep === 3
+                  ? `translateY(-50%) scale(${step3EngravingScale})`
+                  : 'translateY(-50%)',
+                transformOrigin: 'center center'
+              }"
               @click="handleCanvasClick"
               :class="[
-                (currentStep === 2 || selectedSubCategory === 'text')
+                currentStep === 2
                   ? (isProductColorLight ? 'border border-dashed border-neutral-800/80 cursor-text pointer-events-auto' : 'border border-dashed border-white/80 cursor-text pointer-events-auto')
                   : 'border border-transparent pointer-events-none'
               ]"
@@ -863,6 +1337,7 @@ watch(
                   type="image"
                   :image-src="activeArtwork.img"
                   :image-style="dynamicGraphicStyle"
+                  :placement="selectedGraphicPlacement || appliedState.graphicPlacement || 'center'"
                   :is-light-tumbler="isProductColorLight"
                 />
                 <LaserPreview
@@ -914,7 +1389,7 @@ watch(
               <!-- Text Layer (Positioned in allocated space without shifting graphic) -->
               <div
                 v-if="engravingText || selectedSubCategory === 'text'"
-                class="absolute flex flex-col items-center transition-all duration-200 pointer-events-none overflow-hidden"
+                class="absolute flex flex-col items-center transition-all duration-200 pointer-events-none overflow-visible"
                 :style="textContainerStyle"
                 :class="[
                   textOrientation === 'vertical'
@@ -925,7 +1400,7 @@ watch(
                 <LaserPreview
                   v-if="engravingText"
                   type="text"
-                  :text="engravingText"
+                  :text="previewEngravingText"
                   :font-class="[getFontClass(selectedFont), isFontUppercase(selectedFont) ? 'uppercase' : ''].join(' ')"
                   :font-size-class="selectedGraphicSize === 'L' && selectedArtwork
                     ? (selectedFontSize === 'S'
@@ -944,21 +1419,22 @@ watch(
                         : 'text-[46px] sm:text-[55px]')"
                   :orientation="textOrientation"
                   :vertical-lines="formattedVerticalLines"
+                  :placement="selectedPlacement || 'center'"
                   :is-light-tumbler="isProductColorLight"
                 />
                 <!-- Placeholder during active text editing if text is empty -->
-                <div
+                <p
                   v-else-if="selectedSubCategory === 'text'"
-                  class="font-['Stanley_Favorit',sans-serif] font-medium text-[13px] sm:text-[14px] select-none transition-all duration-200"
+                  class="font-['Stanley_Favorit',sans-serif] text-[14px] font-medium leading-normal tracking-tight whitespace-nowrap select-none pointer-events-none transition-all duration-200"
                   :class="[
-                    isProductColorLight ? 'text-neutral-700/80' : 'text-white/90 drop-shadow-xs',
+                    isProductColorLight ? 'text-neutral-800/80' : 'text-white/90 drop-shadow-xs',
                     textOrientation === 'vertical'
-                      ? '-rotate-90 transform-gpu whitespace-nowrap text-center tracking-wider'
-                      : 'text-center w-full max-w-full tracking-wider'
+                      ? '-rotate-90 transform-gpu text-center'
+                      : 'text-center'
                   ]"
                 >
                   Your text will appear here
-                </div>
+                </p>
               </div>
 
               <!-- Placeholder when in Step 2 with no personalization yet -->
@@ -967,7 +1443,7 @@ watch(
                 class="w-full h-full flex flex-col items-center justify-center text-center p-0 select-none pointer-events-none"
               >
                 <p
-                  class="font-['Stanley_Favorit',sans-serif] text-[14px] sm:text-[15px] font-medium leading-tight tracking-tight max-w-[160px]"
+                  class="font-['Stanley_Favorit',sans-serif] text-[14px] font-medium leading-normal tracking-tight whitespace-nowrap"
                   :class="isProductColorLight ? 'text-neutral-800/80' : 'text-white/90 drop-shadow-xs'"
                 >
                   Your design will appear here
@@ -983,7 +1459,7 @@ watch(
           >
             <!-- Toggle 1: Position Toggle (Top / Center / Bottom) -->
             <div
-              class="bg-[#f9f9f9]/80 backdrop-blur-md rounded-[8px] flex items-center p-0 border border-black/10 shadow-sm w-[270px] sm:w-[300px]"
+              class="bg-[#f9f9f9]/80 backdrop-blur-md rounded-[8px] flex items-center p-0 border border-black/10 shadow-sm transition-all w-[270px] sm:w-[300px]"
             >
               <div class="relative flex items-center p-0 rounded-[8px] overflow-hidden w-full">
                 <div
@@ -997,39 +1473,27 @@ watch(
 
                 <button
                   type="button"
-                  @click.stop="selectedGraphicPlacement = 'top'"
+                  @click.stop="handleSetGraphicPlacement('top')"
                   class="relative z-20 w-1/3 py-2.5 text-[12px] font-['Stanley_Favorit',sans-serif] text-center tracking-[-0.36px] transition-colors duration-200 cursor-pointer select-none"
-                  :class="[
-                    selectedGraphicPlacement === 'top'
-                      ? 'text-black font-medium'
-                      : 'text-black/60 font-normal hover:text-black'
-                  ]"
+                  :class="selectedGraphicPlacement === 'top' ? 'text-black font-medium' : 'text-black/60 font-normal hover:text-black'"
                 >
                   Top
                 </button>
 
                 <button
                   type="button"
-                  @click.stop="selectedGraphicPlacement = 'center'"
+                  @click.stop="handleSetGraphicPlacement('center')"
                   class="relative z-20 w-1/3 py-2.5 text-[12px] font-['Stanley_Favorit',sans-serif] text-center tracking-[-0.36px] transition-colors duration-200 cursor-pointer select-none"
-                  :class="[
-                    (selectedGraphicPlacement || 'center') === 'center'
-                      ? 'text-black font-medium'
-                      : 'text-black/60 font-normal hover:text-black'
-                  ]"
+                  :class="(selectedGraphicPlacement || 'center') === 'center' ? 'text-black font-medium' : 'text-black/60 font-normal hover:text-black'"
                 >
                   Center
                 </button>
 
                 <button
                   type="button"
-                  @click.stop="selectedGraphicPlacement = 'bottom'"
+                  @click.stop="handleSetGraphicPlacement('bottom')"
                   class="relative z-20 w-1/3 py-2.5 text-[12px] font-['Stanley_Favorit',sans-serif] text-center tracking-[-0.36px] transition-colors duration-200 cursor-pointer select-none"
-                  :class="[
-                    selectedGraphicPlacement === 'bottom'
-                      ? 'text-black font-medium'
-                      : 'text-black/60 font-normal hover:text-black'
-                  ]"
+                  :class="selectedGraphicPlacement === 'bottom' ? 'text-black font-medium' : 'text-black/60 font-normal hover:text-black'"
                 >
                   Bottom
                 </button>
@@ -1093,7 +1557,7 @@ watch(
         </div>
 
         <!-- Right Column: Step Controls & Details (Figma Node 5093:8868 - Clean without border-l) -->
-        <div class="w-full lg:w-2/5 bg-white p-6 lg:p-10 flex flex-col justify-between overflow-y-auto">
+        <div class="w-full lg:w-2/5 bg-white p-6 lg:p-10 pt-20 lg:pt-24 flex flex-col justify-between overflow-y-auto z-10">
           
           <div class="space-y-7">
             <!-- Product Info (Figma Node 5117:1434) -->
@@ -1148,7 +1612,7 @@ watch(
 
               <!-- Step 2 (Can only be accessed via Next button at the beginning) -->
               <button
-                @click="maxStepReached >= 2 && (currentStep = 2)"
+                @click="maxStepReached >= 2 && goToStep2()"
                 :disabled="maxStepReached < 2"
                 class="flex-1 h-full px-4 flex items-center justify-center transition-all relative rounded-[8px] select-none"
                 :class="[
@@ -1167,15 +1631,15 @@ watch(
 
               <div v-if="currentStep !== 2 && currentStep !== 3" class="h-6 w-px bg-neutral-200 flex-none"></div>
 
-              <!-- Step 3 (Blocked until Step 2 has at least one applied personalization) -->
+              <!-- Step 3 (Blocked until Step 2 is completed) -->
               <button
-                @click="hasPersonalization && (currentStep = 3)"
-                :disabled="!hasPersonalization"
+                @click="maxStepReached >= 3 && hasPersonalization && (currentStep = 3)"
+                :disabled="maxStepReached < 3 || !hasPersonalization"
                 class="flex-1 h-full px-4 flex items-center justify-center transition-all relative rounded-[8px] select-none"
                 :class="[
                   currentStep === 3
                     ? 'border border-black bg-white text-black z-10 shadow-2xs cursor-pointer'
-                    : hasPersonalization
+                    : (maxStepReached >= 3 && hasPersonalization)
                       ? 'border border-transparent text-black opacity-100 cursor-pointer hover:opacity-80'
                       : 'border border-transparent opacity-20 text-black cursor-not-allowed'
                 ]"
@@ -1247,7 +1711,7 @@ watch(
                 <div v-if="!selectedSubCategory" class="flex flex-col gap-[8px] w-full">
                   <!-- Card 1: Browse Gallery -->
                   <button
-                    @click="selectedSubCategory = 'gallery'"
+                    @click="openGraphicGallery()"
                     class="bg-[#f9f9f9] rounded-[8px] p-[24px] flex items-start gap-[24px] text-left transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-md active:scale-[0.99] cursor-pointer w-full group"
                   >
                     <div class="w-6 h-6 flex items-center justify-center text-black flex-none mt-0.5 group-hover:scale-110 transition-transform">
@@ -1516,12 +1980,70 @@ watch(
                   @input="handleTextInput"
                   rows="2"
                   placeholder="Type your text here (ex: Stanley Indonesia)"
-                  class="w-full bg-white border border-black min-h-[48px] rounded-[8px] px-[20px] py-[12px] text-[14px] text-black focus:outline-none placeholder:text-[#898989] font-['Stanley_Favorit',sans-serif] transition-all resize-none"
+                  class="w-full bg-white border min-h-[48px] rounded-[8px] px-[20px] py-[12px] text-[14px] text-black focus:outline-none placeholder:text-[#898989] font-['Stanley_Favorit',sans-serif] transition-all resize-none"
+                  :class="isTextLimitReached ? 'border-amber-500 ring-1 ring-amber-500/50' : 'border-black'"
                 ></textarea>
               </div>
+              <p v-if="isTextLimitReached" class="text-amber-700 bg-amber-50 border border-amber-200/80 rounded px-2.5 py-1 text-[11px] font-medium flex items-center gap-1.5">
+                <span>Maximum capacity reached for Size {{ selectedFontSize }}. Extra text will wrap or switch to a smaller size.</span>
+              </p>
               <div class="font-['Stanley_Favorit',sans-serif] font-normal text-[12px] text-black leading-[18px]">
                 <p class="mb-0">Text capacity adapts dynamically to your chosen font, size & placement.</p>
                 <p>Profanity and restricted phrases will be blocked.</p>
+              </div>
+
+              <!-- Live Space for Graphic Indicator (Only shown if user chose Text first) -->
+              <div
+                v-if="(engravingText || appliedState.text) && firstCustomizationType === 'text'"
+                class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[12px] px-3.5 py-2.5 rounded-[6px] bg-[#f4f4f4] border border-black/10 transition-all select-none"
+              >
+                <!-- CASE 1: Text is centered -> Guide user to position on Top or Bottom -->
+                <template v-if="selectedPlacement === 'center' || !selectedPlacement">
+                  <div class="flex items-center gap-2 font-['Stanley_Favorit',sans-serif]">
+                    <span class="inline-block size-2 rounded-full shrink-0 bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.4)]"></span>
+                    <span class="font-normal text-neutral-700 tracking-[-0.2px]">Position text on Top or Bottom to add a graphic</span>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                    <button
+                      type="button"
+                      @click="selectedPlacement = 'top'"
+                      class="px-2.5 py-1 rounded text-[11px] font-medium border border-black/20 hover:border-black bg-white hover:bg-black hover:text-white transition-all cursor-pointer shadow-2xs"
+                    >
+                      Set to Top
+                    </button>
+                    <button
+                      type="button"
+                      @click="selectedPlacement = 'bottom'"
+                      class="px-2.5 py-1 rounded text-[11px] font-medium border border-black/20 hover:border-black bg-white hover:bg-black hover:text-white transition-all cursor-pointer shadow-2xs"
+                    >
+                      Set to Bottom
+                    </button>
+                  </div>
+                </template>
+
+                <!-- CASE 2: Text is at Top or Bottom -> Space is available for Graphic in the other slot -->
+                <template v-else>
+                  <div class="flex items-center gap-2 font-['Stanley_Favorit',sans-serif]">
+                    <span
+                      class="inline-block size-2 rounded-full shrink-0"
+                      :class="canFitGraphic ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]' : 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.4)]'"
+                    ></span>
+                    <span v-if="canFitGraphic" class="font-medium text-black tracking-[-0.2px]">
+                      Space for graphic: Available ({{ selectedPlacement === 'top' ? 'Bottom slot' : 'Top slot' }})
+                    </span>
+                    <span v-else class="font-normal text-neutral-600 tracking-[-0.2px]">
+                      Space for graphic: Full (Reduce text to add graphic)
+                    </span>
+                  </div>
+                  <button
+                    v-if="canFitGraphic"
+                    type="button"
+                    @click="openGraphicGallery"
+                    class="text-[12px] font-bold font-['Stanley_Favorit',sans-serif] text-black underline hover:text-neutral-600 transition-colors cursor-pointer flex items-center gap-1 shrink-0 ml-2"
+                  >
+                    Add Graphic &rarr;
+                  </button>
+                </template>
               </div>
             </div>
 
@@ -1623,9 +2145,9 @@ watch(
                   </button>
                 </div>
 
-                <!-- Alignment Icons Container (Only visible when orientation is horizontal) -->
+                <!-- Alignment Icons Container (Visible only on Horizontal orientation and when text does not fill full zone) -->
                 <div
-                  v-if="textOrientation === 'horizontal'"
+                  v-if="textOrientation === 'horizontal' && !isTextFullZone"
                   class="bg-[#ededed] flex gap-[20px] h-[48px] items-center px-[16px] rounded-[4px] justify-center sm:justify-start"
                 >
                   <!-- Top Align -->
@@ -1720,13 +2242,22 @@ watch(
                 <h2 class="font-['Stanley_Favorit',sans-serif] font-medium text-[24px] text-black">
                   About {{ activeCampaign.title.replace('.', '') }}
                 </h2>
-                <button
-                  @click="activeCampaign = null"
-                  class="w-[36px] h-[36px] rounded-full hover:bg-neutral-100 flex items-center justify-center text-black transition-colors cursor-pointer"
-                  aria-label="Back to main gallery"
-                >
-                  <ArrowLeft :size="20" />
-                </button>
+                <div class="flex items-center gap-[8px] shrink-0">
+                  <button
+                    @click="activeCampaign = null"
+                    class="w-[36px] h-[36px] rounded-full hover:bg-neutral-100 flex items-center justify-center text-black transition-colors cursor-pointer"
+                    aria-label="Back to main gallery"
+                  >
+                    <ArrowLeft :size="20" />
+                  </button>
+                  <button
+                    @click="handleAttemptClose"
+                    class="w-[36px] h-[36px] rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 hover:text-black transition-colors cursor-pointer"
+                    aria-label="Close sidebar"
+                  >
+                    <X :size="22" />
+                  </button>
+                </div>
               </div>
 
               <!-- Campaign Description (Figma Node 5171:7172) -->
@@ -1739,7 +2270,7 @@ watch(
                 <button
                   v-for="art in activeCampaign.graphics"
                   :key="art.id"
-                  @click="selectedArtwork = selectedArtwork === art.id ? null : art.id"
+                  @click="handleSelectArtwork(art.id)"
                   class="w-full h-[184px] bg-[#f5f5f5] hover:bg-[#eaeaea] rounded-[8px] p-[16px] flex flex-col items-center justify-between text-center transition-all cursor-pointer select-none"
                   :class="[
                     selectedArtwork === art.id
@@ -1747,14 +2278,14 @@ watch(
                       : 'border border-transparent'
                   ]"
                 >
-                  <div class="w-[80px] h-[80px] flex items-center justify-center text-[44px] text-black p-2">
+                  <div class="w-full flex-1 flex items-center justify-center p-1.5 overflow-hidden">
                     <img
                       v-if="art.img"
                       :src="art.img"
                       :alt="art.name"
-                      class="max-w-[64px] max-h-[64px] object-contain pointer-events-none"
+                      class="w-full h-full max-w-[100px] max-h-[96px] object-contain pointer-events-none transition-transform duration-200 group-hover:scale-105"
                     />
-                    <span v-else>{{ art.symbol }}</span>
+                    <span v-else class="text-[44px]">{{ art.symbol }}</span>
                   </div>
                   <div class="flex flex-col gap-[2px] w-full text-center">
                     <span class="font-['Stanley_Favorit',sans-serif] font-normal text-[12px] text-black leading-snug truncate">
@@ -1783,7 +2314,7 @@ watch(
                 <h2 class="font-['Stanley_Favorit',sans-serif] font-medium text-[24px] text-black truncate">
                   {{ activeCategory.name }}
                 </h2>
-                <div class="flex items-center gap-[12px] shrink-0">
+                <div class="flex items-center gap-[8px] shrink-0">
                   <button
                     type="button"
                     class="border border-black rounded-[8px] px-[14px] py-[6px] text-[14px] font-['Stanley_Favorit',sans-serif] font-normal text-black hover:bg-neutral-50 transition-colors cursor-pointer select-none"
@@ -1796,6 +2327,13 @@ watch(
                     aria-label="Back to main gallery"
                   >
                     <ArrowLeft :size="20" />
+                  </button>
+                  <button
+                    @click="handleAttemptClose"
+                    class="w-[36px] h-[36px] rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-600 hover:text-black transition-colors cursor-pointer"
+                    aria-label="Close sidebar"
+                  >
+                    <X :size="22" />
                   </button>
                 </div>
               </div>
@@ -1814,7 +2352,7 @@ watch(
                     <button
                       v-for="art in pageGraphics"
                       :key="art.id"
-                      @click="selectedArtwork = selectedArtwork === art.id ? null : art.id"
+                      @click="handleSelectArtwork(art.id)"
                       class="w-full h-[184px] bg-[#f5f5f5] hover:bg-[#eaeaea] rounded-[8px] p-[16px] flex flex-col items-center justify-between text-center transition-all cursor-pointer select-none"
                       :class="[
                         selectedArtwork === art.id
@@ -1822,14 +2360,14 @@ watch(
                           : 'border border-transparent'
                       ]"
                     >
-                      <div class="w-[80px] h-[80px] flex items-center justify-center text-[44px] text-black p-2">
+                      <div class="w-full flex-1 flex items-center justify-center p-1.5 overflow-hidden">
                         <img
                           v-if="art.img"
                           :src="art.img"
                           :alt="art.name"
-                          class="max-w-[64px] max-h-[64px] object-contain pointer-events-none"
+                          class="w-full h-full max-w-[100px] max-h-[96px] object-contain pointer-events-none transition-transform duration-200 group-hover:scale-105"
                         />
-                        <span v-else>{{ art.symbol }}</span>
+                        <span v-else class="text-[44px]">{{ art.symbol }}</span>
                       </div>
                       <div class="flex flex-col gap-[2px] w-full text-center">
                         <span class="font-['Stanley_Favorit',sans-serif] font-normal text-[12px] text-black leading-snug truncate">
@@ -1978,7 +2516,7 @@ watch(
                   <button
                     v-for="art in topGraphics"
                     :key="art.id"
-                    @click="selectedArtwork = selectedArtwork === art.id ? null : art.id"
+                    @click="handleSelectArtwork(art.id)"
                     class="w-[138px] h-[184px] shrink-0 bg-[#f5f5f5] hover:bg-[#eaeaea] rounded-[8px] p-[16px] flex flex-col items-center justify-between text-center transition-all cursor-pointer select-none"
                     :class="[
                       selectedArtwork === art.id
@@ -1986,14 +2524,14 @@ watch(
                         : 'border border-transparent'
                     ]"
                   >
-                    <div class="w-[80px] h-[80px] flex items-center justify-center text-[44px] text-black p-2">
+                    <div class="w-full flex-1 flex items-center justify-center p-1.5 overflow-hidden">
                       <img
                         v-if="art.img"
                         :src="art.img"
                         :alt="art.name"
-                        class="max-w-[64px] max-h-[64px] object-contain pointer-events-none"
+                        class="w-full h-full max-w-[100px] max-h-[96px] object-contain pointer-events-none transition-transform duration-200 group-hover:scale-105"
                       />
-                      <span v-else>{{ art.symbol }}</span>
+                      <span v-else class="text-[44px]">{{ art.symbol }}</span>
                     </div>
                     <div class="flex flex-col gap-[2px] w-full text-center">
                       <span class="font-['Stanley_Favorit',sans-serif] font-normal text-[12px] text-black leading-snug truncate">
@@ -2113,6 +2651,90 @@ watch(
                 class="flex-1 bg-black hover:bg-neutral-800 text-white font-['Stanley_Favorit',sans-serif] font-normal text-[16px] py-[12px] px-[24px] rounded-[8px] tracking-[-0.48px] transition-colors cursor-pointer text-center"
               >
                 Keep Editing
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
+
+    <!-- CLOSE CONFIRMATION MODAL -->
+    <Teleport to="body">
+      <transition name="fade">
+        <div
+          v-if="showCloseConfirmModal"
+          class="fixed inset-0 z-[120] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 select-none"
+        >
+          <div
+            class="bg-white rounded-[16px] p-[32px] sm:p-[40px] max-w-[480px] w-full border border-[#d9d9d9] shadow-2xl flex flex-col gap-[28px] sm:gap-[32px] animate-fade-in"
+          >
+            <!-- Confirmation Text Container -->
+            <div class="flex flex-col gap-[12px] sm:gap-[16px] w-full">
+              <h3 class="font-['Stanley_Favorit',sans-serif] font-medium text-[22px] sm:text-[24px] text-black leading-tight">
+                Leave Design Studio?
+              </h3>
+              <p class="font-['Stanley_Favorit',sans-serif] font-normal text-[14px] text-neutral-600 leading-[20px] mb-0">
+                Are you sure you want to exit? Your customization progress will be lost if you leave without adding to cart.
+              </p>
+            </div>
+
+            <!-- Button Action Container -->
+            <div class="flex gap-[12px] w-full">
+              <button
+                type="button"
+                @click="showCloseConfirmModal = false"
+                class="flex-1 border border-black hover:bg-neutral-100 text-black font-['Stanley_Favorit',sans-serif] font-normal text-[15px] sm:text-[16px] py-[12px] px-[16px] rounded-[8px] tracking-[-0.48px] transition-colors cursor-pointer text-center"
+              >
+                Keep Designing
+              </button>
+              <button
+                type="button"
+                @click="confirmStudioExit"
+                class="flex-1 bg-black hover:bg-neutral-800 text-white font-['Stanley_Favorit',sans-serif] font-normal text-[15px] sm:text-[16px] py-[12px] px-[16px] rounded-[8px] tracking-[-0.48px] transition-colors cursor-pointer text-center"
+              >
+                Leave Studio
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
+
+    <!-- INSUFFICIENT SPACE FOR GRAPHIC MODAL -->
+    <Teleport to="body">
+      <transition name="fade">
+        <div
+          v-if="showSpaceModal"
+          class="fixed inset-0 z-[120] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 select-none"
+        >
+          <div
+            class="bg-white rounded-[16px] p-[32px] sm:p-[40px] max-w-[480px] w-full border border-[#d9d9d9] shadow-2xl flex flex-col gap-[28px] sm:gap-[32px] animate-fade-in"
+          >
+            <!-- Confirmation Text Container -->
+            <div class="flex flex-col gap-[12px] sm:gap-[16px] w-full">
+              <h3 class="font-['Stanley_Favorit',sans-serif] font-medium text-[22px] sm:text-[24px] text-black leading-tight">
+                Not enough space for graphic
+              </h3>
+              <p class="font-['Stanley_Favorit',sans-serif] font-normal text-[14px] text-black leading-[20px] mb-0">
+                Your current text fills the engraving zone. Shorten your text or reduce font size to make room for a graphic.
+              </p>
+            </div>
+
+            <!-- Button Action Container -->
+            <div class="flex gap-[12px] w-full">
+              <button
+                type="button"
+                @click="showSpaceModal = false"
+                class="flex-1 border border-black hover:bg-neutral-100 text-black font-['Stanley_Favorit',sans-serif] font-normal text-[15px] sm:text-[16px] py-[12px] px-[16px] rounded-[8px] tracking-[-0.48px] transition-colors cursor-pointer text-center"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                @click="openTextToAdjust"
+                class="flex-1 bg-black hover:bg-neutral-800 text-white font-['Stanley_Favorit',sans-serif] font-normal text-[15px] sm:text-[16px] py-[12px] px-[16px] rounded-[8px] tracking-[-0.48px] transition-colors cursor-pointer text-center"
+              >
+                Adjust Text
               </button>
             </div>
           </div>

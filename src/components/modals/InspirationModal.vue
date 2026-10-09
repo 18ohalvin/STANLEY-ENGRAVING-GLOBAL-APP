@@ -98,20 +98,24 @@ const emit = defineEmits<{
 
               <div v-else class="flex flex-col gap-2.5">
                 <h2 class="font-['Stanley_Favorit',sans-serif] font-medium text-[15px] text-black">
-                  Stanley x Liunic on Things Drop
+                  {{ card.titleLine1 }}
                 </h2>
                 <div class="p-4 rounded-[8px] bg-[#f5f5f5] border border-neutral-200/60 space-y-2.5">
                   <p class="font-['Stanley_Favorit',sans-serif] font-light text-[12px] text-neutral-800 leading-[16px]">
-                    Featuring whimsical playful characters, positive affirmation icons, and bold graffiti flourishes designed exclusively for Stanley tumblers and mugs.
+                    {{ card.description || card.subtitle || 'High-precision laser engraved graphics designed specifically for authentic Stanley drinkware.' }}
                   </p>
-                  <div class="flex items-center gap-3 pt-1">
+                  <div class="flex items-center gap-3 pt-1 flex-wrap">
                     <div class="flex items-center gap-1.5 text-[11px] font-['Stanley_Favorit',sans-serif] font-medium text-neutral-800">
                       <CheckCircle2 :size="14" class="text-black" />
                       <span>Vector Certified</span>
                     </div>
                     <div class="flex items-center gap-1.5 text-[11px] font-['Stanley_Favorit',sans-serif] font-medium text-neutral-800">
                       <CheckCircle2 :size="14" class="text-black" />
-                      <span>Limited Edition</span>
+                      <span>Laser Tolerance Standard</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[11px] font-['Stanley_Favorit',sans-serif] font-medium text-neutral-800">
+                      <CheckCircle2 :size="14" class="text-black" />
+                      <span>Available Now</span>
                     </div>
                   </div>
                 </div>

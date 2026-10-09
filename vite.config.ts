@@ -7,8 +7,9 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
   server: {
-    host: true,
-    port: 5173,
+    host: '0.0.0.0',
+    port: 5175,
+    allowedHosts: true,
   },
   resolve: {
     alias: {

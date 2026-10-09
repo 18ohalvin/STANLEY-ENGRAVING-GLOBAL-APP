@@ -22,6 +22,7 @@ const selectedInspirationCard = ref<InspirationCard | null>(null)
 const isInspirationModalOpen = ref(false)
 const isFaqModalOpen = ref(false)
 const isArtistDropModalOpen = ref(false)
+const selectedCampaignId = ref<string | undefined>(undefined)
 
 const selectedQuickViewProduct = ref<Product | null>(null)
 const isQuickViewModalOpen = ref(false)
@@ -38,15 +39,12 @@ const selectedCustomizerArtwork = ref<string | undefined>(undefined)
 const cartCount = ref(0)
 const cartToast = ref<string | null>(null)
 
-// Navigation & Actions
 const handleSelectInspirationCard = (card: InspirationCard) => {
   if (card.id === 'faq' || card.id === 'faq-2') {
     isFaqModalOpen.value = true
-  } else if (card.id === 'artist-drops' || card.id === 'artist-drops-2') {
-    isArtistDropModalOpen.value = true
   } else {
-    selectedInspirationCard.value = card
-    isInspirationModalOpen.value = true
+    selectedCampaignId.value = card.campaignId || 'autumn-26'
+    isArtistDropModalOpen.value = true
   }
 }
 
@@ -58,10 +56,8 @@ const handleSwitchInspirationCard = (cardId: string) => {
   nextTick(() => {
     if (cardId === 'faq' || cardId === 'faq-2') {
       isFaqModalOpen.value = true
-    } else if (cardId === 'artist-drops' || cardId === 'artist-drops-2') {
-      isArtistDropModalOpen.value = true
     } else {
-      selectedInspirationCard.value = INSPIRATION_CARDS.find(c => c.id === cardId) || INSPIRATION_CARDS[1]
+      selectedInspirationCard.value = INSPIRATION_CARDS.find(c => c.id === cardId) || INSPIRATION_CARDS[0]
       isInspirationModalOpen.value = true
     }
   })
@@ -127,10 +123,17 @@ const handleSelectStanleyProduct = (product: Product, color?: ProductColor) => {
   }
 }
 
-const handleHeroNavigate = (_productId?: string) => {
-  // Hero CTA button opens the Explore the Line-up modal matching desktop UX in explore mode
-  selectStanleyModalMode.value = 'explore'
-  isSelectStanleyModalOpen.value = true
+const handleHeroNavigate = (productId?: string, campaignId?: string) => {
+  if (campaignId) {
+    selectedCampaignId.value = campaignId
+    isArtistDropModalOpen.value = true
+  } else if (productId) {
+    const product = PRODUCTS.find(p => p.id === productId) || PRODUCTS[0]
+    handleDesignNow(product)
+  } else {
+    selectStanleyModalMode.value = 'explore'
+    isSelectStanleyModalOpen.value = true
+  }
 }
 
 const scrollToLineup = () => {
@@ -146,6 +149,23 @@ const handleOpenCart = () => {
     cartToast.value = null
   }, 3000)
 }
+
+const handleSelectCustomizeOption = (optionId: string) => {
+  if (optionId === 'trending') {
+    selectedCampaignId.value = 'autumn-26'
+    isArtistDropModalOpen.value = true
+  } else if (optionId === 'collaborations' || optionId === 'artist') {
+    selectedCampaignId.value = 'barbie'
+    isArtistDropModalOpen.value = true
+  } else if (optionId === 'licensed') {
+    selectedCampaignId.value = 'indonesia-team'
+    isArtistDropModalOpen.value = true
+  } else if (optionId === 'corporate') {
+    handleDesignNow(PRODUCTS[0])
+  } else if (optionId === 'categories' || optionId === 'products' || optionId === 'artwork') {
+    handleDesignNow(PRODUCTS[0])
+  }
+}
 </script>
 
 <template>
@@ -156,6 +176,7 @@ const handleOpenCart = () => {
       <MobileHeader
         :cart-count="cartCount"
         @open-cart="handleOpenCart"
+        @select-customize-option="handleSelectCustomizeOption"
       />
 
       <!-- 2. Main Mobile Landing Content -->
@@ -216,12 +237,12 @@ const handleOpenCart = () => {
 
       <MobileArtistDropModal
         :is-open="isArtistDropModalOpen"
+        :campaign-id="selectedCampaignId"
         @close="isArtistDropModalOpen = false"
         @switch-card="handleSwitchInspirationCard"
         @start-engrave="(graphicId) => {
           isArtistDropModalOpen = false
-          const mappedId = graphicId === 'viking-de-juve' ? 'viking-juve' : graphicId
-          handleDesignNow(PRODUCTS[0], undefined, mappedId)
+          handleDesignNow(PRODUCTS[0], undefined, graphicId)
         }"
       />
 

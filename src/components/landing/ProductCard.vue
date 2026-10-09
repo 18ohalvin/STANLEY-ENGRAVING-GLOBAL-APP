@@ -75,6 +75,7 @@ const handleDesignNow = () => {
       <img
         :src="activeImage"
         :alt="product.name"
+        @error="($event.target as HTMLImageElement).src = product.defaultImage"
         class="w-full h-full object-contain p-3 transition-transform duration-500 ease-out transform-gpu will-change-transform group-hover:scale-105"
       />
     </div>

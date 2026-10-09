@@ -9,10 +9,12 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'open-cart'): void
+  (e: 'select-customize-option', id: string): void
 }>()
 
 const isMenuOpen = ref(false)
 const isSearchOpen = ref(false)
+const isCustomizeExpanded = ref(true)
 const searchQuery = ref('')
 
 const navItems = [
@@ -23,7 +25,13 @@ const navItems = [
   { name: 'AEROLIGHT', href: '#' },
   { name: 'ACCESSORIES', href: '#' },
   { name: 'LIMITED EDITIONS', href: '#' },
-  { name: 'CUSTOMIZE', href: '#', active: true },
+  { name: 'CUSTOMIZE', href: '#', active: true, hasChildren: true },
+]
+
+const customizeSubItems = [
+  { id: 'collaborations', name: 'Collaborations' },
+  { id: 'licensed', name: 'Licensed Graphics' },
+  { id: 'categories', name: 'Browse Categories' },
 ]
 </script>
 
@@ -140,17 +148,54 @@ const navItems = [
 
           <div class="flex-1 overflow-y-auto py-4 px-5 divide-y divide-neutral-100">
             <nav class="space-y-1 pb-4">
-              <a
-                v-for="item in navItems"
-                :key="item.name"
-                :href="item.href"
-                @click="isMenuOpen = false"
-                class="flex items-center justify-between py-3 text-sm font-bold tracking-wide transition-all duration-200 hover:translate-x-1.5 active:translate-x-1 transform-gpu group"
-                :class="item.active ? 'text-black font-extrabold border-l-2 border-black pl-2' : 'text-neutral-700 hover:text-black'"
-              >
-                <span>{{ item.name }}</span>
-                <ChevronRight :size="16" class="text-neutral-400 group-hover:text-black transition-colors" />
-              </a>
+              <template v-for="item in navItems" :key="item.name">
+                <!-- Regular Menu Item -->
+                <a
+                  v-if="!item.hasChildren"
+                  :href="item.href"
+                  @click="isMenuOpen = false"
+                  class="flex items-center justify-between py-3 text-sm font-bold tracking-wide transition-all duration-200 hover:translate-x-1.5 active:translate-x-1 transform-gpu group text-neutral-700 hover:text-black"
+                >
+                  <span>{{ item.name }}</span>
+                  <ChevronRight :size="16" class="text-neutral-400 group-hover:text-black transition-colors" />
+                </a>
+
+                <!-- CUSTOMIZE Accordion Item -->
+                <div v-else class="flex flex-col py-1">
+                  <button
+                    @click="isCustomizeExpanded = !isCustomizeExpanded"
+                    class="flex items-center justify-between py-2 text-sm font-extrabold tracking-wide transition-all duration-200 text-black border-l-2 border-black pl-2 cursor-pointer group"
+                  >
+                    <div class="flex items-center gap-1.5">
+                      <span>{{ item.name }}</span>
+                      <span class="px-1.5 py-0.5 text-[8.5px] bg-black text-white rounded-full font-bold uppercase tracking-wider">
+                        Studio
+                      </span>
+                    </div>
+                    <ChevronRight
+                      :size="16"
+                      class="text-black transition-transform duration-200"
+                      :class="isCustomizeExpanded ? 'rotate-90' : ''"
+                    />
+                  </button>
+
+                  <!-- Submenu list matching Desktop Mega Menu -->
+                  <div
+                    v-if="isCustomizeExpanded"
+                    class="ml-3 pl-3 border-l border-neutral-200 flex flex-col gap-1 mt-1 mb-2 animate-fade-in"
+                  >
+                    <button
+                      v-for="sub in customizeSubItems"
+                      :key="sub.id"
+                      @click="() => { isMenuOpen = false; emit('select-customize-option', sub.id); }"
+                      class="flex items-center justify-between py-2 px-2 text-[13px] font-medium text-neutral-700 hover:text-black hover:bg-neutral-50 rounded-md transition-colors text-left cursor-pointer active:scale-98"
+                    >
+                      <span>{{ sub.name }}</span>
+                      <ChevronRight :size="14" class="text-neutral-300 group-hover:text-black" />
+                    </button>
+                  </div>
+                </div>
+              </template>
             </nav>
 
             <div class="pt-5 space-y-4 text-sm text-neutral-600">
