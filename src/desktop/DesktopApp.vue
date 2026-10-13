@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { ChevronUp } from 'lucide-vue-next'
 import MainHeader from '@/components/layout/MainHeader.vue'
 import HeroBanner from '@/components/landing/HeroBanner.vue'
 import GetToKnowMore from '@/components/landing/GetToKnowMore.vue'
@@ -112,6 +113,33 @@ const scrollToLineup = () => {
   }, 50)
 }
 
+const scrollToExplore = () => {
+  activeView.value = 'customize'
+  setTimeout(() => {
+    const el = document.getElementById('get-to-know-more')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, 50)
+}
+
+const showBackToTop = ref(false)
+const handleWindowScroll = () => {
+  showBackToTop.value = window.scrollY > 400
+}
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleWindowScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleWindowScroll)
+})
+
 const handleAddToCart = (payload: any) => {
   isCustomizerOpen.value = false
   cartToast.value = `Added 1x ${payload.product.name} to your cart!`
@@ -162,11 +190,12 @@ const handleOpenCorporateFromMenu = () => {
     </main>
 
     <!-- View 2: Our Main Customizer Landing Page (when Customize is clicked) -->
-    <main v-else class="flex-1 animate-fade-in">
+    <main v-else class="flex-1 animate-fade-in relative">
       <!-- 1. Hero Banner (Figma Node 5058:6131) -->
       <HeroBanner
         @navigate-customizer="handleHeroNavigate"
         @scroll-lineup="scrollToLineup"
+        @scroll-down="scrollToExplore"
       />
 
       <!-- 2. Get Inspired Carousel (Figma Node 5058:6133 / 5772:508) -->
@@ -183,6 +212,18 @@ const handleOpenCorporateFromMenu = () => {
 
       <!-- Footer -->
       <Footer />
+
+      <!-- Floating Back to Top Button -->
+      <transition name="fade">
+        <button
+          v-if="showBackToTop"
+          @click="scrollToTop"
+          class="fixed bottom-8 right-8 z-40 w-12 h-12 rounded-full bg-black/90 hover:bg-black text-white shadow-2xl flex items-center justify-center border border-white/20 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer backdrop-blur-md"
+          aria-label="Back to top"
+        >
+          <ChevronUp class="w-5 h-5" />
+        </button>
+      </transition>
     </main>
 
     <!-- Modals & Studio -->

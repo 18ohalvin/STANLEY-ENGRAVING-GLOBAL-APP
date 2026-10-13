@@ -34,14 +34,14 @@ const filteredProducts = computed(() => {
 
 <template>
   <!-- Mobile Explore The Line-up Section (Matching Desktop Mechanism & Figma) -->
-  <div id="mobile-lineup-section" class="flex flex-col gap-[20px] items-start relative shrink-0 w-full" data-node-id="5217:1996">
-    <!-- Section Title (Figma Node 5217:1997) -->
-    <div class="px-[16px] w-full flex flex-col font-['Stanley_Favorit',sans-serif] font-medium h-[24px] justify-center text-[20px] text-black tracking-[-0.6px]" data-node-id="5217:1997">
+  <div id="mobile-lineup-section" class="flex flex-col gap-[20px] items-start relative shrink-0 w-full scroll-mt-4" data-node-id="5217:1996">
+    <!-- Section Title (Figma Node 5217:1997) with Scroll Reveal -->
+    <div class="px-[16px] w-full flex flex-col font-['Stanley_Favorit',sans-serif] font-medium h-[24px] justify-center text-[20px] text-black tracking-[-0.6px] scroll-reveal" data-node-id="5217:1997">
       <h2 class="leading-none">Explore The Line-up</h2>
     </div>
 
     <!-- Category Filter Pills (Desktop-matched silhouette filter with smooth transition & tactile feedback) -->
-    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full py-0.5 px-[16px]">
+    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full py-0.5 px-[16px] scroll-reveal delay-100">
       <button
         v-for="cat in categories"
         :key="cat.id"
@@ -58,7 +58,7 @@ const filteredProducts = computed(() => {
     </div>
 
     <!-- Product List Section (gap-[16px] overflow-x-auto) -->
-    <div class="flex gap-[16px] items-start relative shrink-0 w-full overflow-x-auto no-scrollbar scroll-smooth px-[16px] pb-6" data-node-id="5217:1998">
+    <div class="flex gap-[16px] items-start relative shrink-0 w-full overflow-x-auto no-scrollbar scroll-smooth px-[16px] pb-6 scroll-reveal-scale delay-200" data-node-id="5217:1998">
       <MobileProductCard
         v-for="product in filteredProducts"
         :key="product.id"

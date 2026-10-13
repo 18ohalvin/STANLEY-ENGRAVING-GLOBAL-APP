@@ -9,15 +9,15 @@ const emit = defineEmits<{
 
 <template>
   <!-- Figma Node 5217:1942 Product Selection Section (Get to know more.) -->
-  <div class="flex flex-col gap-[20px] items-start relative shrink-0 w-full" data-node-id="5217:1942">
-    <!-- Section Title (Figma Node 5217:1943) - aligned with 16px padding -->
-    <div class="px-[16px] w-full flex flex-col font-['Stanley_Favorit',sans-serif] font-medium justify-center text-black tracking-[-0.6px]" data-node-id="5217:1943">
+  <div id="mobile-get-to-know-more" class="flex flex-col gap-[20px] items-start relative shrink-0 w-full scroll-mt-4" data-node-id="5217:1942">
+    <!-- Section Title (Figma Node 5217:1943) with Scroll Reveal -->
+    <div class="px-[16px] w-full flex flex-col font-['Stanley_Favorit',sans-serif] font-medium justify-center text-black tracking-[-0.6px] scroll-reveal" data-node-id="5217:1943">
       <h2 class="text-[20px] leading-tight font-medium">Curated Artwork Collections.</h2>
       <p class="text-[13px] text-neutral-600 leading-snug mt-1 font-normal">Explore our exclusive artworks—precision laser-etched onto your favorite silhouette.</p>
     </div>
 
     <!-- Horizontal Swipeable Cards Container with Symmetric Left & Right 16px Padding -->
-    <div class="w-full relative shrink-0" data-node-id="5238:6634">
+    <div class="w-full relative shrink-0 scroll-reveal-scale delay-100" data-node-id="5238:6634">
       <div class="flex gap-[16px] items-center w-full overflow-x-auto no-scrollbar scroll-smooth px-[16px] pt-1 pb-4" data-node-id="5238:6635">
         <div
           v-for="card in INSPIRATION_CARDS"

@@ -112,13 +112,13 @@ const handleCardClick = (card: InspirationCard) => {
 </script>
 
 <template>
-  <section class="w-full py-8 sm:py-12 overflow-hidden">
+  <section id="get-to-know-more" class="w-full py-8 sm:py-12 overflow-hidden scroll-mt-6">
     <div
       ref="sectionWrapper"
       class="max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-[24px] w-full flex flex-col lg:flex-row items-start gap-8 lg:gap-10"
     >
-      <!-- Left Sidebar (Figma Node 5772:508 Layout) -->
-      <div class="w-full lg:w-[320px] lg:h-[427px] flex-none flex flex-col justify-between py-1 pr-2">
+      <!-- Left Sidebar (Figma Node 5772:508 Layout) with Scroll Reveal -->
+      <div class="w-full lg:w-[320px] lg:h-[427px] flex-none flex flex-col justify-between py-1 pr-2 scroll-reveal scroll-reveal-left">
         <!-- Top: Curated Artwork Collections -->
         <div>
           <h2 class="font-['Stanley_Favorit',sans-serif] font-medium text-3xl sm:text-[32px] text-black tracking-[-0.96px] leading-[1.15]">
@@ -178,12 +178,13 @@ const handleCardClick = (card: InspirationCard) => {
         ]"
       >
         <div
-          v-for="card in INSPIRATION_CARDS"
+          v-for="(card, cardIdx) in INSPIRATION_CARDS"
           :key="card.id"
           @click="handleCardClick(card)"
-          class="h-[390px] sm:h-[427px] rounded-[16px] relative overflow-hidden cursor-pointer group transition-all duration-300 transform-gpu will-change-transform hover:-translate-y-1.5 hover:shadow-xl select-none"
+          class="h-[390px] sm:h-[427px] rounded-[16px] relative overflow-hidden cursor-pointer group transition-all duration-300 transform-gpu will-change-transform hover:-translate-y-1.5 hover:shadow-xl select-none scroll-reveal-scale"
           :class="[
-            isScrollable ? 'flex-none w-[280px] sm:w-[320px] snap-start' : 'w-full'
+            isScrollable ? 'flex-none w-[280px] sm:w-[320px] snap-start' : 'w-full',
+            cardIdx === 0 ? 'delay-100' : cardIdx === 1 ? 'delay-200' : 'delay-300'
           ]"
           :style="{ backgroundColor: card.bgColor || '#e7e7d5' }"
         >
