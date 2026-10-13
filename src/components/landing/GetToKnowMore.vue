@@ -11,72 +11,55 @@ const emit = defineEmits<{
 const scrollContainer = ref<HTMLDivElement | null>(null)
 const sectionWrapper = ref<HTMLDivElement | null>(null)
 
-const getInitialPadding = () => {
-  if (typeof window === 'undefined') return '24px'
-  const w = window.innerWidth
-  if (w > 1440) return `${(w - 1440) / 2 + 24}px`
-  if (w >= 640) return '24px'
-  return '16px'
-}
-
-const leftPadding = ref(getInitialPadding())
+const isScrollable = ref(false)
 const isDragging = ref(false)
-const isOverflowing = ref(false)
 let startX = 0
 let scrollLeftStart = 0
 let hasMoved = false
 
-const rightPadding = computed(() => {
-  return isOverflowing.value ? '0px' : leftPadding.value
-})
-
-const checkOverflow = () => {
-  if (!scrollContainer.value) return
-  const el = scrollContainer.value
-  isOverflowing.value = el.scrollWidth > el.clientWidth + 6
-}
-
-const updatePadding = () => {
-  const w = window.innerWidth
-  const padding = w > 1440 ? (w - 1440) / 2 + 24 : (w >= 640 ? 24 : 16)
-  leftPadding.value = `${padding}px`
-  nextTick(() => {
-    checkOverflow()
-  })
+const checkLayoutMode = () => {
+  if (typeof window === 'undefined') return
+  // On desktop screens >= 1200px, all 3 cards easily fit side-by-side in full view without scrolling
+  if (window.innerWidth >= 1200) {
+    isScrollable.value = false
+    return
+  }
+  // On smaller viewports (< 1200px), check whether container has enough space (at least 860px)
+  if (scrollContainer.value) {
+    isScrollable.value = scrollContainer.value.clientWidth < 860
+  } else {
+    isScrollable.value = window.innerWidth < 1200
+  }
 }
 
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
-  updatePadding()
-  window.addEventListener('resize', updatePadding)
-  if (typeof ResizeObserver !== 'undefined') {
+  checkLayoutMode()
+  window.addEventListener('resize', checkLayoutMode)
+  if (typeof ResizeObserver !== 'undefined' && sectionWrapper.value) {
     resizeObserver = new ResizeObserver(() => {
-      updatePadding()
+      checkLayoutMode()
     })
-    if (sectionWrapper.value) {
-      resizeObserver.observe(sectionWrapper.value)
-    } else {
-      resizeObserver.observe(document.body)
-    }
+    resizeObserver.observe(sectionWrapper.value)
   }
   nextTick(() => {
-    checkOverflow()
-    setTimeout(checkOverflow, 120)
-    setTimeout(checkOverflow, 300)
+    checkLayoutMode()
+    setTimeout(checkLayoutMode, 100)
+    setTimeout(checkLayoutMode, 300)
   })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updatePadding)
+  window.removeEventListener('resize', checkLayoutMode)
   if (resizeObserver) {
     resizeObserver.disconnect()
   }
 })
 
 const scroll = (direction: 'left' | 'right') => {
-  if (!scrollContainer.value || !isOverflowing.value) return
-  const scrollAmount = 350
+  if (!scrollContainer.value || !isScrollable.value) return
+  const scrollAmount = 320
   scrollContainer.value.scrollBy({
     left: direction === 'left' ? -scrollAmount : scrollAmount,
     behavior: 'smooth',
@@ -84,7 +67,7 @@ const scroll = (direction: 'left' | 'right') => {
 }
 
 const handleWheel = (e: WheelEvent) => {
-  if (!scrollContainer.value || !isOverflowing.value) return
+  if (!scrollContainer.value || !isScrollable.value) return
   if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
     const maxScroll = scrollContainer.value.scrollWidth - scrollContainer.value.clientWidth
     if (maxScroll > 0) {
@@ -99,7 +82,7 @@ const handleWheel = (e: WheelEvent) => {
 }
 
 const handleMouseDown = (e: MouseEvent) => {
-  if (!scrollContainer.value || !isOverflowing.value) return
+  if (!scrollContainer.value || !isScrollable.value) return
   isDragging.value = true
   hasMoved = false
   startX = e.pageX - scrollContainer.value.offsetLeft
@@ -107,7 +90,7 @@ const handleMouseDown = (e: MouseEvent) => {
 }
 
 const handleMouseMove = (e: MouseEvent) => {
-  if (!isDragging.value || !scrollContainer.value || !isOverflowing.value) return
+  if (!isDragging.value || !scrollContainer.value || !isScrollable.value) return
   e.preventDefault()
   const x = e.pageX - scrollContainer.value.offsetLeft
   const walk = (x - startX) * 1.5
@@ -122,7 +105,7 @@ const handleMouseUp = () => {
 }
 
 const handleCardClick = (card: InspirationCard) => {
-  if (!hasMoved) {
+  if (!isScrollable.value || !hasMoved) {
     emit('select-card', card)
   }
 }
@@ -132,15 +115,11 @@ const handleCardClick = (card: InspirationCard) => {
   <section class="w-full py-8 sm:py-12 overflow-hidden">
     <div
       ref="sectionWrapper"
-      class="w-full flex flex-col lg:flex-row items-start gap-8 lg:gap-10"
-      :style="{
-        paddingLeft: leftPadding,
-        paddingRight: rightPadding
-      }"
+      class="max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-[24px] w-full flex flex-col lg:flex-row items-start gap-8 lg:gap-10"
     >
       <!-- Left Sidebar (Figma Node 5772:508 Layout) -->
-      <div class="w-full lg:w-[330px] lg:h-[427px] flex-none flex flex-col justify-between py-1 pr-4">
-        <!-- Top: Trending in the Studio -->
+      <div class="w-full lg:w-[320px] lg:h-[427px] flex-none flex flex-col justify-between py-1 pr-2">
+        <!-- Top: Curated Artwork Collections -->
         <div>
           <h2 class="font-['Stanley_Favorit',sans-serif] font-medium text-3xl sm:text-[32px] text-black tracking-[-0.96px] leading-[1.15]">
             Curated Artwork Collections.
@@ -149,8 +128,8 @@ const handleCardClick = (card: InspirationCard) => {
             Explore our exclusive artworks—precision laser-etched onto your favorite silhouette.
           </p>
 
-          <!-- Slider Arrows for desktop mouse users (only visible when content overflows) -->
-          <div v-if="isOverflowing" class="hidden lg:flex items-center gap-2 mt-6">
+          <!-- Slider Arrows (only visible when space is not enough and scrolling is required) -->
+          <div v-if="isScrollable" class="hidden sm:flex items-center gap-2 mt-6">
             <button
               @click="scroll('left')"
               class="w-10 h-10 rounded-full border border-neutral-300 hover:border-black flex items-center justify-center transition-colors cursor-pointer bg-white text-neutral-800 hover:text-black shadow-2xs"
@@ -183,7 +162,7 @@ const handleCardClick = (card: InspirationCard) => {
         </div>
       </div>
 
-      <!-- Right Carousel: Full width extending to the right viewport edge -->
+      <!-- Right Cards Container: Switches from non-scrollable 3-column grid when space fits, to scrollable carousel on small screens -->
       <div
         ref="scrollContainer"
         @wheel="handleWheel"
@@ -191,18 +170,21 @@ const handleCardClick = (card: InspirationCard) => {
         @mousemove="handleMouseMove"
         @mouseup="handleMouseUp"
         @mouseleave="handleMouseUp"
-        class="flex-1 min-w-0 w-full flex gap-5 sm:gap-6 xl:gap-7 pt-1 pb-4 snap-x snap-proximity"
+        class="flex-1 min-w-0 w-full"
         :class="[
-          isOverflowing
-            ? 'overflow-x-auto no-scrollbar scroll-smooth cursor-grab active:cursor-grabbing'
-            : 'overflow-x-hidden cursor-default'
+          isScrollable
+            ? 'flex gap-5 sm:gap-6 overflow-x-auto no-scrollbar scroll-smooth pt-1 pb-4 snap-x snap-proximity cursor-grab active:cursor-grabbing'
+            : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-6 pt-1 pb-4 overflow-visible cursor-default'
         ]"
       >
         <div
           v-for="card in INSPIRATION_CARDS"
           :key="card.id"
           @click="handleCardClick(card)"
-          class="flex-none w-[280px] sm:w-[305px] xl:w-[316px] h-[390px] sm:h-[427px] rounded-[16px] relative overflow-hidden cursor-pointer group snap-start transition-all duration-300 transform-gpu will-change-transform hover:-translate-y-1.5 hover:shadow-xl select-none"
+          class="h-[390px] sm:h-[427px] rounded-[16px] relative overflow-hidden cursor-pointer group transition-all duration-300 transform-gpu will-change-transform hover:-translate-y-1.5 hover:shadow-xl select-none"
+          :class="[
+            isScrollable ? 'flex-none w-[280px] sm:w-[320px] snap-start' : 'w-full'
+          ]"
           :style="{ backgroundColor: card.bgColor || '#e7e7d5' }"
         >
           <!-- Background Image -->
@@ -244,12 +226,6 @@ const handleCardClick = (card: InspirationCard) => {
             </div>
           </div>
         </div>
-        <!-- Trailing spacer so last card has matching right margin on full scroll when overflowing -->
-        <div
-          v-if="isOverflowing"
-          class="flex-none h-full pointer-events-none aria-hidden"
-          :style="{ width: 'max(24px, calc((100vw - 1440px) / 2 + 48px))' }"
-        ></div>
       </div>
     </div>
   </section>
