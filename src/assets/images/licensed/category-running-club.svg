@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Running Club Shield Badge -->
+  <path d="M60 14L26 28v36c0 24 15 42 34 48 19-6 34-24 34-48V28L60 14z" stroke="#111827" stroke-width="3" fill="none" stroke-linejoin="round"/>
+  <!-- Winged Running Shoe Silhouette / Track Lines -->
+  <path d="M36 72c10-2 22-8 26-16l8-16 14 6-6 12 12 4c-4 10-14 18-28 18-12 0-20-4-26-8z" fill="#111827"/>
+  <!-- Wing Feathers -->
+  <path d="M52 38c12-10 26-12 36-12M48 46c10-8 22-10 32-10M46 54c8-6 18-8 26-8" stroke="#111827" stroke-width="2" stroke-linecap="round"/>
+  <!-- Pace / KM Star -->
+  <circle cx="60" cy="98" r="3" fill="#111827"/>
+  <circle cx="50" cy="95" r="2" fill="#111827"/>
+  <circle cx="70" cy="95" r="2" fill="#111827"/>
+</svg>

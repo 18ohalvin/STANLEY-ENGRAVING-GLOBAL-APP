@@ -21,14 +21,28 @@ const getInitialPadding = () => {
 
 const leftPadding = ref(getInitialPadding())
 const isDragging = ref(false)
+const isOverflowing = ref(false)
 let startX = 0
 let scrollLeftStart = 0
 let hasMoved = false
+
+const rightPadding = computed(() => {
+  return isOverflowing.value ? '0px' : leftPadding.value
+})
+
+const checkOverflow = () => {
+  if (!scrollContainer.value) return
+  const el = scrollContainer.value
+  isOverflowing.value = el.scrollWidth > el.clientWidth + 6
+}
 
 const updatePadding = () => {
   const w = window.innerWidth
   const padding = w > 1440 ? (w - 1440) / 2 + 24 : (w >= 640 ? 24 : 16)
   leftPadding.value = `${padding}px`
+  nextTick(() => {
+    checkOverflow()
+  })
 }
 
 let resizeObserver: ResizeObserver | null = null
@@ -40,8 +54,17 @@ onMounted(() => {
     resizeObserver = new ResizeObserver(() => {
       updatePadding()
     })
-    resizeObserver.observe(document.body)
+    if (sectionWrapper.value) {
+      resizeObserver.observe(sectionWrapper.value)
+    } else {
+      resizeObserver.observe(document.body)
+    }
   }
+  nextTick(() => {
+    checkOverflow()
+    setTimeout(checkOverflow, 120)
+    setTimeout(checkOverflow, 300)
+  })
 })
 
 onUnmounted(() => {
@@ -52,7 +75,7 @@ onUnmounted(() => {
 })
 
 const scroll = (direction: 'left' | 'right') => {
-  if (!scrollContainer.value) return
+  if (!scrollContainer.value || !isOverflowing.value) return
   const scrollAmount = 350
   scrollContainer.value.scrollBy({
     left: direction === 'left' ? -scrollAmount : scrollAmount,
@@ -61,7 +84,7 @@ const scroll = (direction: 'left' | 'right') => {
 }
 
 const handleWheel = (e: WheelEvent) => {
-  if (!scrollContainer.value) return
+  if (!scrollContainer.value || !isOverflowing.value) return
   if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
     const maxScroll = scrollContainer.value.scrollWidth - scrollContainer.value.clientWidth
     if (maxScroll > 0) {
@@ -76,7 +99,7 @@ const handleWheel = (e: WheelEvent) => {
 }
 
 const handleMouseDown = (e: MouseEvent) => {
-  if (!scrollContainer.value) return
+  if (!scrollContainer.value || !isOverflowing.value) return
   isDragging.value = true
   hasMoved = false
   startX = e.pageX - scrollContainer.value.offsetLeft
@@ -84,7 +107,7 @@ const handleMouseDown = (e: MouseEvent) => {
 }
 
 const handleMouseMove = (e: MouseEvent) => {
-  if (!isDragging.value || !scrollContainer.value) return
+  if (!isDragging.value || !scrollContainer.value || !isOverflowing.value) return
   e.preventDefault()
   const x = e.pageX - scrollContainer.value.offsetLeft
   const walk = (x - startX) * 1.5
@@ -111,7 +134,8 @@ const handleCardClick = (card: InspirationCard) => {
       ref="sectionWrapper"
       class="w-full flex flex-col lg:flex-row items-start gap-8 lg:gap-10"
       :style="{
-        paddingLeft: leftPadding
+        paddingLeft: leftPadding,
+        paddingRight: rightPadding
       }"
     >
       <!-- Left Sidebar (Figma Node 5772:508 Layout) -->
@@ -119,14 +143,14 @@ const handleCardClick = (card: InspirationCard) => {
         <!-- Top: Trending in the Studio -->
         <div>
           <h2 class="font-['Stanley_Favorit',sans-serif] font-medium text-3xl sm:text-[32px] text-black tracking-[-0.96px] leading-[1.15]">
-            Trending in the Studio.
+            Curated Artwork Collections.
           </h2>
           <p class="text-neutral-600 text-[15px] sm:text-[16px] leading-[24px] mt-3 sm:mt-4 font-normal max-w-[310px]">
-            High-precision fiber laser technology meets infinite creative possibilities.
+            Explore our exclusive artworks—precision laser-etched onto your favorite silhouette.
           </p>
 
-          <!-- Slider Arrows for desktop mouse users -->
-          <div class="hidden lg:flex items-center gap-2 mt-6">
+          <!-- Slider Arrows for desktop mouse users (only visible when content overflows) -->
+          <div v-if="isOverflowing" class="hidden lg:flex items-center gap-2 mt-6">
             <button
               @click="scroll('left')"
               class="w-10 h-10 rounded-full border border-neutral-300 hover:border-black flex items-center justify-center transition-colors cursor-pointer bg-white text-neutral-800 hover:text-black shadow-2xs"
@@ -167,13 +191,18 @@ const handleCardClick = (card: InspirationCard) => {
         @mousemove="handleMouseMove"
         @mouseup="handleMouseUp"
         @mouseleave="handleMouseUp"
-        class="flex-1 min-w-0 w-full flex gap-6 sm:gap-8 overflow-x-auto no-scrollbar scroll-smooth pt-1 pb-4 snap-x snap-proximity cursor-grab active:cursor-grabbing"
+        class="flex-1 min-w-0 w-full flex gap-5 sm:gap-6 xl:gap-7 pt-1 pb-4 snap-x snap-proximity"
+        :class="[
+          isOverflowing
+            ? 'overflow-x-auto no-scrollbar scroll-smooth cursor-grab active:cursor-grabbing'
+            : 'overflow-x-hidden cursor-default'
+        ]"
       >
         <div
           v-for="card in INSPIRATION_CARDS"
           :key="card.id"
           @click="handleCardClick(card)"
-          class="flex-none w-[280px] sm:w-[320px] h-[390px] sm:h-[427px] rounded-[16px] relative overflow-hidden cursor-pointer group snap-start transition-all duration-300 transform-gpu will-change-transform hover:-translate-y-1.5 hover:shadow-xl select-none"
+          class="flex-none w-[280px] sm:w-[305px] xl:w-[316px] h-[390px] sm:h-[427px] rounded-[16px] relative overflow-hidden cursor-pointer group snap-start transition-all duration-300 transform-gpu will-change-transform hover:-translate-y-1.5 hover:shadow-xl select-none"
           :style="{ backgroundColor: card.bgColor || '#e7e7d5' }"
         >
           <!-- Background Image -->
@@ -215,8 +244,9 @@ const handleCardClick = (card: InspirationCard) => {
             </div>
           </div>
         </div>
-        <!-- Trailing spacer so last card has matching right margin on full scroll -->
+        <!-- Trailing spacer so last card has matching right margin on full scroll when overflowing -->
         <div
+          v-if="isOverflowing"
           class="flex-none h-full pointer-events-none aria-hidden"
           :style="{ width: 'max(24px, calc((100vw - 1440px) / 2 + 48px))' }"
         ></div>

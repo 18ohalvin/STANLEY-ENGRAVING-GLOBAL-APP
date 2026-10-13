@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Basketball Emblem / Round Shield -->
+  <circle cx="60" cy="60" r="54" stroke="#111827" stroke-width="3" fill="none"/>
+  <!-- Basketball lines -->
+  <circle cx="60" cy="60" r="42" stroke="#111827" stroke-width="2.5" fill="none"/>
+  <path d="M18 60h84M60 18v84" stroke="#111827" stroke-width="2.5"/>
+  <path d="M32 30c14 16 14 44 0 60M88 30c-14 16-14 44 0 60" stroke="#111827" stroke-width="2.5"/>
+  <!-- Banner / Wing text accent -->
+  <path d="M26 102h68M36 108h48" stroke="#111827" stroke-width="2" stroke-linecap="round"/>
+</svg>

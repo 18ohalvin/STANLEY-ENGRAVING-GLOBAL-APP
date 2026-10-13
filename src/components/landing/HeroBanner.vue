@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import bannerBarbieImg from '@/assets/images/banner-barbie-hero.jpg'
-import bannerPeanutsImg from '@/assets/images/banner-peanuts-hero.jpg'
+import bannerLiunicImg from '@/assets/images/banner-liunic-hero.jpg'
+import bannerMaliqImg from '@/assets/images/banner-maliq-hero.jpg'
 
 const emit = defineEmits<{
   (e: 'navigate-customizer', productId?: string, campaignId?: string): void
@@ -22,23 +22,23 @@ interface Slide {
 const slides: Slide[] = [
   {
     id: 0,
-    badge: 'Limited Edition Collab',
-    title: 'Stanley1913 x Barbie™',
-    subtitle: 'Iconic Pink Collection.<br class="hidden sm:inline" /> Limited Edition Available Now.',
-    ctaText: 'Engrave Barbie™',
-    image: bannerBarbieImg,
+    badge: 'Stanley x Liunic Collection',
+    title: 'Fuel your imagination',
+    subtitle: 'Keep the creativity flowing.<br class="hidden sm:inline" /> The Stanley x Liunic Collection.',
+    ctaText: 'Explore Collection',
+    image: bannerLiunicImg,
     productId: 'quencher-h20-40oz',
-    campaignId: 'barbie',
+    campaignId: 'liunic',
   },
   {
     id: 1,
-    badge: 'Limited Edition Collab',
-    title: 'Stanley1913 x Peanuts™',
-    subtitle: 'Snoopy & Friends Edition.<br class="hidden sm:inline" /> Relive classic comic nostalgia.',
-    ctaText: 'Engrave Peanuts™',
-    image: bannerPeanutsImg,
-    productId: 'iceflow-flip-straw',
-    campaignId: 'peanuts',
+    badge: "Stanley x MALIQ & D'ESSENTIALS",
+    title: 'Keep the rhythm flowing',
+    subtitle: "The MALIQ & D'ESSENTIALS Official Tour Artworks",
+    ctaText: 'Explore Collection',
+    image: bannerMaliqImg,
+    productId: 'quencher-h20-40oz',
+    campaignId: 'maliq',
   },
 ]
 
@@ -209,16 +209,10 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Razor-sharp HD image rendering & natural zoom without GPU texture loss */
+/* Razor-sharp HD image rendering */
 .hero-slide-img {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: high-quality;
-  transform: scale(1);
-  transform-origin: center center;
-  transition: transform 7s cubic-bezier(0.25, 1, 0.5, 1);
-}
-.hero-slide-img.is-active {
-  transform: scale(1.04);
+  image-rendering: auto;
+  backface-visibility: hidden;
 }
 
 /* Headline & Subtitle Staggered Animations */

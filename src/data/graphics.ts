@@ -1,6 +1,8 @@
 import cardGuidedImg from '@/assets/images/card-guided.png'
 import cardArtistDropImg from '@/assets/images/card-artist-drop.png'
 import bannerHeroImg from '@/assets/images/banner-hero.png'
+import bannerLiunicHeroImg from '@/assets/images/banner-liunic-hero.jpg'
+import bannerMaliqHeroImg from '@/assets/images/banner-maliq-hero.jpg'
 import bannerBarbieHeroImg from '@/assets/images/banner-barbie-hero.jpg'
 import bannerPeanutsHeroImg from '@/assets/images/banner-peanuts-hero.jpg'
 
@@ -40,6 +42,18 @@ import mother_s_dayUrl from '@/assets/graphics/celebration/mother-s-day.svg'
 import mother_s_dayRaw from '@/assets/graphics/celebration/mother-s-day.svg?raw'
 import weddingUrl from '@/assets/graphics/celebration/wedding.svg'
 import weddingRaw from '@/assets/graphics/celebration/wedding.svg?raw'
+
+// === Liunic Official SVGs ===
+import liunic01Url from '@/assets/graphics/liunic/liunic-01.svg'
+import liunic01Raw from '@/assets/graphics/liunic/liunic-01.svg?raw'
+import liunic02Url from '@/assets/graphics/liunic/liunic-02.svg'
+import liunic02Raw from '@/assets/graphics/liunic/liunic-02.svg?raw'
+import liunic03Url from '@/assets/graphics/liunic/liunic-03.svg'
+import liunic03Raw from '@/assets/graphics/liunic/liunic-03.svg?raw'
+import liunic04Url from '@/assets/graphics/liunic/liunic-04.svg'
+import liunic04Raw from '@/assets/graphics/liunic/liunic-04.svg?raw'
+import liunic05Url from '@/assets/graphics/liunic/liunic-05.svg'
+import liunic05Raw from '@/assets/graphics/liunic/liunic-05.svg?raw'
 
 // === Family Official SVGs ===
 import certified_snack_supplierUrl from '@/assets/graphics/family/certified-snack-supplier.svg'
@@ -333,6 +347,57 @@ function createSvgDataUri(svgBody: string): string {
 }
 
 
+
+// ==========================================
+// STANLEY X LIUNIC ARTWORK COLLECTION
+// ==========================================
+export const liunicGraphics: GraphicItem[] = [
+  {
+    id: 'liunic-gaze',
+    name: 'Liunic Gaze',
+    subtext: 'Fuel Your Imagination',
+    symbol: '👀',
+    category: 'liunic',
+    img: liunic01Url,
+    svgRaw: liunic01Raw
+  },
+  {
+    id: 'liunic-kitty-disguise',
+    name: 'Kitty Disguise',
+    subtext: 'Fuel Your Imagination',
+    symbol: '🐱',
+    category: 'liunic',
+    img: liunic02Url,
+    svgRaw: liunic02Raw
+  },
+  {
+    id: 'liunic-coffee-chaos',
+    name: 'Coffee Before Chaos',
+    subtext: 'Fuel Your Imagination',
+    symbol: '☕',
+    category: 'liunic',
+    img: liunic03Url,
+    svgRaw: liunic03Raw
+  },
+  {
+    id: 'liunic-speed-runner',
+    name: 'Speed Runner Pup',
+    subtext: 'Fuel Your Imagination',
+    symbol: '⚡',
+    category: 'liunic',
+    img: liunic04Url,
+    svgRaw: liunic04Raw
+  },
+  {
+    id: 'liunic-star-commuter',
+    name: 'Star Commuter',
+    subtext: 'Fuel Your Imagination',
+    symbol: '⭐',
+    category: 'liunic',
+    img: liunic05Url,
+    svgRaw: liunic05Raw
+  }
+]
 
 // ==========================================
 // CELEBRATION SERIES (Official Stanley1913 Vector Graphics)
@@ -1289,6 +1354,7 @@ export const topGraphics: GraphicItem[] = [
 // ==========================================
 export const allGraphics: GraphicItem[] = [
   ...topGraphics,
+  ...liunicGraphics,
   ...celebrationsGraphics,
   ...familyGraphics,
   ...holidayGraphics,
@@ -1330,6 +1396,22 @@ export interface GraphicCampaign {
 }
 
 export const graphicCampaigns: GraphicCampaign[] = [
+  {
+    id: 'liunic',
+    title: 'Stanley1913 x Liunic Collection',
+    subtitle: 'Fuel Your Imagination',
+    bannerImg: bannerLiunicHeroImg,
+    description: 'Keep the creativity flowing with playful characters and whimsical doodles from the Stanley x Liunic Collection.',
+    graphics: liunicGraphics
+  },
+  {
+    id: 'maliq',
+    title: "Stanley1913 x MALIQ & D'ESSENTIALS",
+    subtitle: 'Keep The Rhythm Flowing',
+    bannerImg: bannerMaliqHeroImg,
+    description: "The MALIQ & D'ESSENTIALS Official Tour Artworks. Precision-etched commemorative music tour crests and emblems.",
+    graphics: celebrationsGraphics
+  },
   {
     id: 'autumn-26',
     title: "Stanley1913 x Autumn '26 Collection",
@@ -1417,6 +1499,54 @@ export const graphicCampaigns: GraphicCampaign[] = [
     bannerImg: familyMartLogoImg,
     description: 'Iconic FamilyMart colorways, FAMIMA CAFÉ emblems, and cheerful convenience lifestyle badges.',
     graphics: familyMartGraphics
+  },
+  {
+    id: 'university',
+    title: 'Stanley1913 x University Collection',
+    subtitle: 'Collegiate & Academic Heritage',
+    bannerImg: bannerHeroImg,
+    description: 'Represent your university pride with collegiate crests, seals, and varsity emblems etched with laser precision.',
+    graphics: collegesGraphics
+  },
+  {
+    id: 'school',
+    title: 'Stanley1913 x School Collection',
+    subtitle: 'Academy & Campus Series',
+    bannerImg: bannerHeroImg,
+    description: 'Celebrate school spirit, campus milestones, and academy pride on your everyday Stanley tumbler.',
+    graphics: collegesGraphics
+  },
+  {
+    id: 'football-club',
+    title: 'Stanley1913 x Football Club',
+    subtitle: 'Matchday & Supporter Edition',
+    bannerImg: bannerPssiStadiumImg,
+    description: 'Rep your club with pride. Official football club shields, crests, and stadium badges etched with crisp laser clarity.',
+    graphics: pssiCupGraphics
+  },
+  {
+    id: 'basketball-club',
+    title: 'Stanley1913 x Basketball Club',
+    subtitle: 'Hoops & Court Series',
+    bannerImg: bannerHeroImg,
+    description: 'Take your team everywhere. High-energy basketball club crests, jersey emblems, and court graphics.',
+    graphics: sportsGraphics
+  },
+  {
+    id: 'communities',
+    title: 'Stanley1913 x Communities',
+    subtitle: 'Clubs, Groups & Community Crests',
+    bannerImg: bannerHeroImg,
+    description: 'Engineered for hydration on the go. Official community crests, group emblems, and club badges.',
+    graphics: sportsGraphics
+  },
+  {
+    id: 'running-club',
+    title: 'Stanley1913 x Communities',
+    subtitle: 'Clubs, Groups & Community Crests',
+    bannerImg: bannerHeroImg,
+    description: 'Engineered for hydration on the go. Official community crests, group emblems, and club badges.',
+    graphics: sportsGraphics
   },
   {
     id: 'pssi-cup',

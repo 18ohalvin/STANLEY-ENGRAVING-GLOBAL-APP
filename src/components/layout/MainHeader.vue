@@ -7,10 +7,13 @@ import type { Product, ProductColor } from '@/data/catalog'
 
 defineProps<{
   standalone?: boolean
+  activeView?: 'home' | 'customize'
 }>()
 
 const emit = defineEmits<{
   (e: 'explore'): void
+  (e: 'navigate-home'): void
+  (e: 'navigate-customize'): void
   (e: 'select-graphic-collection', category: string): void
   (e: 'design-now', product: Product, color?: ProductColor, artworkId?: string): void
   (e: 'see-details', product: Product): void
@@ -19,7 +22,6 @@ const emit = defineEmits<{
   (e: 'open-faq'): void
 }>()
 
-const activeTab = ref('CUSTOMIZE')
 const isMegaMenuOpen = ref(false)
 let closeTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -38,12 +40,12 @@ const handleMouseLeaveCustomize = () => {
 }
 
 const handleNavClick = (linkName: string) => {
-  activeTab.value = linkName
   if (linkName === 'CUSTOMIZE') {
-    isMegaMenuOpen.value = !isMegaMenuOpen.value
-    emit('explore')
+    isMegaMenuOpen.value = false
+    emit('navigate-customize')
   } else {
     isMegaMenuOpen.value = false
+    emit('navigate-home')
   }
 }
 
@@ -55,7 +57,7 @@ const navLinks = [
   { name: 'AEROLIGHT', href: '#' },
   { name: 'ACCESSORIES', href: '#' },
   { name: 'LIMITED EDITIONS', href: '#' },
-  { name: 'CUSTOMIZE', href: '#', active: true },
+  { name: 'CUSTOMIZE', href: '#' },
 ]
 </script>
 
@@ -90,7 +92,7 @@ const navLinks = [
     <!-- Main Navigation Bar (80px) with 24px padding on desktop -->
     <div class="max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-[24px] h-[80px] flex items-center justify-between relative">
       <!-- Stanley Brand Logo -->
-      <a href="/" class="flex items-center cursor-pointer select-none group">
+      <a href="/" @click.prevent="emit('navigate-home')" class="flex items-center cursor-pointer select-none group">
         <img
           :src="stanleyLogo"
           alt="STANLEY"
@@ -111,10 +113,10 @@ const navLinks = [
             @click="handleNavClick(link.name)"
             :class="[
               'cursor-pointer transition-all duration-150 py-1 relative flex items-center',
-              link.name === 'CUSTOMIZE' 
+              link.name === 'CUSTOMIZE' && (activeView === 'customize' || !activeView)
                 ? 'font-bold text-black border-b-2 border-black -mb-[2px]' 
-                : activeTab === link.name 
-                  ? 'font-bold text-black' 
+                : link.name === 'CUSTOMIZE'
+                  ? 'hover:text-black text-neutral-700 font-semibold'
                   : 'hover:text-black text-neutral-600'
             ]"
           >

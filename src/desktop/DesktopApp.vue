@@ -16,6 +16,7 @@ import CustomizerStudio from '@/components/customizer/CustomizerStudio.vue'
 import { PRODUCTS, type Product, type ProductColor, type InspirationCard } from '@/data/catalog'
 
 // State
+const activeView = ref<'home' | 'customize'>('home')
 const selectedInspirationCard = ref<InspirationCard | null>(null)
 const isInspirationModalOpen = ref(false)
 const isFaqModalOpen = ref(false)
@@ -91,11 +92,24 @@ const handleHeroNavigate = (productId?: string, campaignId?: string) => {
   }
 }
 
+const handleNavigateCustomize = () => {
+  activeView.value = 'customize'
+  window.scrollTo({ top: 0, behavior: 'instant' })
+}
+
+const handleNavigateHome = () => {
+  activeView.value = 'home'
+  window.scrollTo({ top: 0, behavior: 'instant' })
+}
+
 const scrollToLineup = () => {
-  const el = document.getElementById('lineup-section')
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth' })
-  }
+  activeView.value = 'customize'
+  setTimeout(() => {
+    const el = document.getElementById('lineup-section')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, 50)
 }
 
 const handleAddToCart = (payload: any) => {
@@ -126,6 +140,9 @@ const handleOpenCorporateFromMenu = () => {
   <div class="min-h-screen bg-white text-black flex flex-col font-['Stanley_Favorit',sans-serif] overflow-x-hidden">
     <!-- Top Navigation Header with Figma Mega Menu -->
     <MainHeader
+      :active-view="activeView"
+      @navigate-home="handleNavigateHome"
+      @navigate-customize="handleNavigateCustomize"
       @explore="scrollToLineup"
       @select-graphic-collection="handleSelectGraphicCollectionFromMenu"
       @design-now="handleDesignNow"
@@ -135,8 +152,17 @@ const handleOpenCorporateFromMenu = () => {
       @open-faq="isFaqModalOpen = true"
     />
 
-    <!-- Main Content Area -->
-    <main class="flex-1">
+    <!-- View 1: Dummy Stanley 1913 Homepage (when on Home) -->
+    <main v-if="activeView === 'home'" class="flex-1 w-full bg-white flex flex-col items-center">
+      <img
+        src="/stanley-homepage-body.webp"
+        alt="Stanley 1913 Homepage"
+        class="w-full max-w-[1440px] h-auto object-top select-none pointer-events-auto"
+      />
+    </main>
+
+    <!-- View 2: Our Main Customizer Landing Page (when Customize is clicked) -->
+    <main v-else class="flex-1 animate-fade-in">
       <!-- 1. Hero Banner (Figma Node 5058:6131) -->
       <HeroBanner
         @navigate-customizer="handleHeroNavigate"
@@ -154,10 +180,10 @@ const handleOpenCorporateFromMenu = () => {
         @design-now="handleDesignNow"
         @see-details="handleSeeDetails"
       />
-    </main>
 
-    <!-- Footer -->
-    <Footer />
+      <!-- Footer -->
+      <Footer />
+    </main>
 
     <!-- Modals & Studio -->
     <SelectStanleyModal

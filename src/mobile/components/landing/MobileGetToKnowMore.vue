@@ -11,8 +11,9 @@ const emit = defineEmits<{
   <!-- Figma Node 5217:1942 Product Selection Section (Get to know more.) -->
   <div class="flex flex-col gap-[20px] items-start relative shrink-0 w-full" data-node-id="5217:1942">
     <!-- Section Title (Figma Node 5217:1943) - aligned with 16px padding -->
-    <div class="px-[16px] w-full flex flex-col font-['Stanley_Favorit',sans-serif] font-medium h-[24px] justify-center text-[20px] text-black tracking-[-0.6px]" data-node-id="5217:1943">
-      <h2 class="leading-none">Get to know more.</h2>
+    <div class="px-[16px] w-full flex flex-col font-['Stanley_Favorit',sans-serif] font-medium justify-center text-black tracking-[-0.6px]" data-node-id="5217:1943">
+      <h2 class="text-[20px] leading-tight font-medium">Curated Artwork Collections.</h2>
+      <p class="text-[13px] text-neutral-600 leading-snug mt-1 font-normal">Explore our exclusive artworks—precision laser-etched onto your favorite silhouette.</p>
     </div>
 
     <!-- Horizontal Swipeable Cards Container with Symmetric Left & Right 16px Padding -->

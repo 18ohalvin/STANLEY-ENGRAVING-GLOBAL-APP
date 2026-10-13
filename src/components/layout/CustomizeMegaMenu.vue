@@ -3,16 +3,14 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-vue-next'
 import type { Product, ProductColor } from '@/data/catalog'
 import { PRODUCTS } from '@/data/catalog'
-import collabBarbieImg from '@/assets/images/collab-barbie.jpg'
-import collabPeanutsImg from '@/assets/images/collab-peanuts.jpg'
-import collabNationalParksImg from '@/assets/images/collab-national-parks.jpg'
-import collabPeterPerchImg from '@/assets/images/collab-peter-perch.jpg'
+import collabLiunicCardImg from '@/assets/images/collab-liunic-card.jpg'
+import collabMaliqCardImg from '@/assets/images/collab-maliq-card.jpg'
 
-import brandUnileverImg from '@/assets/images/licensed/brand-unilever.png'
-import collegesPillarImg from '@/assets/images/licensed/colleges-pillar.png'
-import indonesiaPssiImg from '@/assets/images/licensed/indonesia-pssi.png'
-import automotiveLogoImg from '@/assets/images/licensed/automotive-logo.png'
-import familyMartLogoImg from '@/assets/images/licensed/familymart-logo.png'
+import categoryUniversityImg from '@/assets/images/licensed/category-university.svg'
+import categorySchoolImg from '@/assets/images/licensed/category-school.svg'
+import categoryFootballClubImg from '@/assets/images/licensed/category-football-club.svg'
+import categoryBasketballClubImg from '@/assets/images/licensed/category-basketball-club.svg'
+import categoryCommunitiesImg from '@/assets/images/licensed/category-communities.svg'
 import bannerPssiStadiumImg from '@/assets/images/licensed/banner-pssi-stadium.png'
 
 import {
@@ -143,41 +141,29 @@ onMounted(() => {
   })
 })
 
-// Collaboration cards matching the 4 Collaborators
+// Collaboration cards: 2 Selected Collaborations
 const collaborationCards = [
   {
-    id: 'barbie',
-    title: 'Barbie™ x Stanley1913',
-    subtitle: 'Limited Edition Icon Collection',
-    image: collabBarbieImg,
+    id: 'liunic',
+    title: 'Stanley x Liunic',
+    subtitle: 'Fuel your imagination.',
+    image: collabLiunicCardImg,
   },
   {
-    id: 'peanuts',
-    title: 'Peanuts™ x Stanley1913',
-    subtitle: 'Snoopy & Friends Edition',
-    image: collabPeanutsImg,
-  },
-  {
-    id: 'national-parks',
-    title: 'National Parks x Stanley1913',
-    subtitle: 'Heritage Wilderness Series',
-    image: collabNationalParksImg,
-  },
-  {
-    id: 'peter-perch',
-    title: 'Peter Perch x Stanley1913',
-    subtitle: 'Wildlife & Fish Art Collection',
-    image: collabPeterPerchImg,
+    id: 'maliq',
+    title: "Stanley x MALIQ & D'ESSENTIAL",
+    subtitle: 'Keep the rhythm flowing',
+    image: collabMaliqCardImg,
   }
 ]
 
-// Licensed category cards (Figma Node 5742:3656)
+// Licensed category cards (5 Categories)
 const licensedCards = [
-  { id: 'brands', title: 'Brands', count: '4 Graphics', image: brandUnileverImg },
-  { id: 'colleges', title: 'Colleges', count: '4 Graphics', image: collegesPillarImg },
-  { id: 'indonesia-team', title: 'Indonesia’s Team', count: '4 Graphics', image: indonesiaPssiImg },
-  { id: 'automotive', title: 'Automotive Logo', count: '4 Graphics', image: automotiveLogoImg },
-  { id: 'familymart', title: 'Family Mart', count: '4 Graphics', image: familyMartLogoImg },
+  { id: 'university', title: 'University', count: '6 Graphics', image: categoryUniversityImg },
+  { id: 'school', title: 'School', count: '4 Graphics', image: categorySchoolImg },
+  { id: 'football-club', title: 'Football Club', count: '8 Graphics', image: categoryFootballClubImg },
+  { id: 'basketball-club', title: 'Basketball Club', count: '6 Graphics', image: categoryBasketballClubImg },
+  { id: 'communities', title: 'Communities', count: '5 Graphics', image: categoryCommunitiesImg },
 ]
 </script>
 

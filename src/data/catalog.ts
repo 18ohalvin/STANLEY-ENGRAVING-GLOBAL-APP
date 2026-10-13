@@ -5,15 +5,9 @@ import campMugImg from '@/assets/products/camp-mug-green.png'
 import cafeTumblerImg from '@/assets/products/cafe-tumbler-brown.png'
 import quencherGreenImg from '@/assets/products/quencher-green.png'
 
-import cardQuestionsImg from '@/assets/images/card-questions.png'
-import cardGuidedImg from '@/assets/images/card-guided.png'
-import cardArtistDropImg from '@/assets/images/card-artist-drop.png'
-import bannerBarbieHeroImg from '@/assets/images/banner-barbie-hero.jpg'
-
 import trending1Img from '@/assets/images/trending-1.jpg'
 import trending2Img from '@/assets/images/trending-2.jpg'
 import trending3Img from '@/assets/images/trending-3.jpg'
-import trending4Img from '@/assets/images/trending-4.jpg'
 
 export interface ProductColor {
   name: string
@@ -95,52 +89,40 @@ export interface InspirationCard {
 
 export const INSPIRATION_CARDS: InspirationCard[] = [
   {
-    id: 'autumn-26',
-    titleLine1: "Autumn '26 Collection",
-    subtitle: 'Limited-edition outdoors and nature graphics.',
-    tag: "Autumn '26",
+    id: 'collaborations',
+    titleLine1: 'Collaborations',
+    subtitle: 'Exclusive artist & brand co-creations.',
+    tag: 'Collaborations',
     image: trending1Img,
-    bgColor: '#4a2c36',
+    bgColor: '#1d3e68',
     textColor: 'white',
-    gradientOverlay: 'linear-gradient(180deg, rgba(58, 28, 38, 0.85) 0%, rgba(58, 28, 38, 0.4) 45%, transparent 80%)',
-    description: 'Limited-edition outdoors and nature graphics for the season.',
-    campaignId: 'autumn-26',
+    gradientOverlay: 'linear-gradient(180deg, rgba(12, 38, 70, 0.70) 0%, rgba(12, 38, 70, 0.22) 40%, transparent 75%)',
+    description: 'Exclusive artist & brand co-creations.',
+    campaignId: 'maliq',
   },
   {
-    id: 'world-cup-vibes',
-    titleLine1: 'World Cup Vibes',
-    subtitle: 'Rep your favorite team front and center.',
-    tag: 'World Cup',
+    id: 'licensed-graphics',
+    titleLine1: 'Licensed Graphics',
+    subtitle: 'Official badges, crests, and partner artwork.',
+    tag: 'Licensed Graphics',
     image: trending2Img,
-    bgColor: '#0f172a',
+    bgColor: '#1e293b',
     textColor: 'white',
-    gradientOverlay: 'linear-gradient(180deg, rgba(15, 23, 42, 0.82) 0%, rgba(15, 23, 42, 0.4) 45%, transparent 80%)',
-    description: 'Rep your favorite team front and center with laser engraved logos.',
-    campaignId: 'world-cup',
+    gradientOverlay: 'linear-gradient(180deg, rgba(15, 23, 42, 0.72) 0%, rgba(15, 23, 42, 0.25) 40%, transparent 75%)',
+    description: 'Official badges, crests, and partner artwork.',
+    campaignId: 'university',
   },
   {
-    id: 'automotive-lovers',
-    titleLine1: 'Automotive Lovers? Join here.',
-    subtitle: 'Precision motorsport insignias and race badges.',
-    tag: 'Automotive',
+    id: 'design-gallery',
+    titleLine1: 'Design Gallery',
+    subtitle: 'Explore curated vector art and graphics.',
+    tag: 'Design Gallery',
     image: trending3Img,
-    bgColor: '#3f1f2e',
+    bgColor: '#2a221a',
     textColor: 'white',
-    gradientOverlay: 'linear-gradient(180deg, rgba(58, 26, 40, 0.86) 0%, rgba(58, 26, 40, 0.42) 45%, transparent 80%)',
-    description: 'Precision motorsport insignias and race badges.',
-    campaignId: 'automotive',
-  },
-  {
-    id: 'college-logo',
-    titleLine1: 'Find Your Exclusive College Logo',
-    subtitle: 'Collegiate pillar crests and campus emblems.',
-    tag: 'Collegiate',
-    image: trending4Img,
-    bgColor: '#540f2c',
-    textColor: 'white',
-    gradientOverlay: 'linear-gradient(180deg, rgba(82, 12, 42, 0.88) 0%, rgba(82, 12, 42, 0.42) 45%, transparent 80%)',
-    description: 'Collegiate pillar crests and campus emblems.',
-    campaignId: 'college',
+    gradientOverlay: 'linear-gradient(180deg, rgba(25, 20, 16, 0.72) 0%, rgba(25, 20, 16, 0.25) 40%, transparent 75%)',
+    description: 'Explore curated vector art and graphics.',
+    campaignId: 'autumn-26',
   },
 ]
 
