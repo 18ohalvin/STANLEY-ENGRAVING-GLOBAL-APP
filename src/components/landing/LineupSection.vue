@@ -136,7 +136,7 @@ onUnmounted(() => {
     <!-- Header with Title & Filters (Anchored to Global 1440px Container) -->
     <div
       ref="headerContainer"
-      class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-[24px] flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 scroll-reveal"
+      class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-[24px] flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"
     >
       <div>
         <h2
@@ -192,17 +192,17 @@ onUnmounted(() => {
     <div
       ref="scrollContainer"
       @scroll.passive="checkScroll"
-      class="w-full flex gap-8 overflow-x-auto no-scrollbar pb-8 pt-2 snap-x snap-proximity scroll-smooth scroll-reveal-scale delay-150"
+      class="w-full flex gap-8 overflow-x-auto no-scrollbar pb-8 pt-2 snap-x snap-proximity scroll-smooth"
       :style="{
         paddingLeft: leftPadding,
         scrollPaddingLeft: leftPadding
       }"
     >
       <ProductCard
-        v-for="(product, pIdx) in filteredProducts"
+        v-for="product in filteredProducts"
         :key="product.id"
         :product="product"
-        class="snap-start transition-transform duration-300 hover:-translate-y-1"
+        class="snap-start"
         @design-now="(prod, col) => emit('design-now', prod, col)"
         @see-details="(prod) => emit('see-details', prod)"
       />
